@@ -1,0 +1,17 @@
+# uv creates this from uv.lock - never commit it
+.venv/
+
+# Kaggle dataset: the data/ folder is tracked, its contents are not
+*.csv
+*.zip
+
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.env
+
+# Local agent config; contains absolute paths from this machine
+.claude/
+
+# Planning and design docs; kept locally, not published
+docs/superpowers/
