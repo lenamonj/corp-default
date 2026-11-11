@@ -9,3 +9,12 @@ def raw():
     if not DATA_PATH.exists():
         pytest.skip("data/american_bankruptcy.csv is not present")
     return load_raw()
+
+
+@pytest.fixture(scope="session")
+def industry():
+    from corp_default.data import INDUSTRY_PATH, load_industry
+
+    if not INDUSTRY_PATH.exists():
+        pytest.skip("data/industry.csv is not present")
+    return load_industry()

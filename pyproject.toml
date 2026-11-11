@@ -41,6 +41,7 @@ explicit = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "-m 'not integration' -p no:anyio"
 markers = [
     "needs_data: requires data/american_bankruptcy.csv",
