@@ -1,10 +1,12 @@
-"""The published notebook's functions, copied from corp_default.ipynb cells 6, 12, 20, and 23.
+"""The published notebook's functions, copied from corp_default.ipynb cells 6, 12, 20, 23, and 36.
 
 The reference the library is checked against. Never imported by the library.
 Only the names carry a legacy_ prefix; the bodies are as published.
 """
 
 import numpy as np
+import pandas as pd
+from sklearn.metrics import auc, precision_recall_curve
 
 PANEL_END = 2018
 
@@ -99,3 +101,68 @@ def legacy_altman_z(frame):
         + 0.6 * frame["mve_to_liabilities"]
         + 1.0 * frame["asset_turnover"]
     )
+
+
+def legacy_pr_auc(y_true, scores):
+    prec, rec, _ = precision_recall_curve(y_true, scores)
+    return auc(rec, prec)
+
+
+def legacy_capture_rate(y_true, scores, budgets=(0.01, 0.05, 0.10)):
+    """Share of positives captured within the top-k% highest-scoring rows."""
+    y_true = np.asarray(y_true)
+    ranked = y_true[np.argsort(-np.asarray(scores), kind="mergesort")]
+    total_pos = ranked.sum()
+    rows = []
+    for b in budgets:
+        k = max(1, int(round(b * len(ranked))))  # noqa: RUF046 (as published)
+        caught = ranked[:k].sum()
+        rows.append(
+            {
+                "budget": f"{b:.0%}",
+                "n_reviewed": k,
+                "defaults_caught": int(caught),
+                "capture_rate": caught / total_pos,
+                "precision": caught / k,
+                "lift": (caught / k) / y_true.mean(),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def legacy_cluster_bootstrap_ci(y_true, scores, groups, metric, n_boot=1000, seed=42):
+    """95% CI resampling whole companies, since firm-years within a company correlate."""
+    rng = np.random.default_rng(seed)
+    y_true, scores, groups = np.asarray(y_true), np.asarray(scores), np.asarray(groups)
+    uniq = np.unique(groups)
+    index_of = {g: np.flatnonzero(groups == g) for g in uniq}
+    stats = []
+    for _ in range(n_boot):
+        drawn = rng.choice(uniq, size=len(uniq), replace=True)
+        idx = np.concatenate([index_of[g] for g in drawn])
+        y_b = y_true[idx]
+        if y_b.sum() == 0 or y_b.sum() == len(y_b):
+            continue  # degenerate resample, no positives or no negatives
+        stats.append(metric(y_b, scores[idx]))
+    return float(np.percentile(stats, 2.5)), float(np.percentile(stats, 97.5)), len(stats)
+
+
+def legacy_paired_bootstrap_diff_ci(
+    y_true, scores_a, scores_b, groups, metric, n_boot=1000, seed=42
+):
+    """95% CI for metric(a) - metric(b) over the SAME company resamples."""
+    rng = np.random.default_rng(seed)
+    y_true = np.asarray(y_true)
+    scores_a, scores_b = np.asarray(scores_a), np.asarray(scores_b)
+    groups = np.asarray(groups)
+    uniq = np.unique(groups)
+    index_of = {g: np.flatnonzero(groups == g) for g in uniq}
+    diffs = []
+    for _ in range(n_boot):
+        drawn = rng.choice(uniq, size=len(uniq), replace=True)
+        idx = np.concatenate([index_of[g] for g in drawn])
+        y_b = y_true[idx]
+        if y_b.sum() == 0 or y_b.sum() == len(y_b):
+            continue
+        diffs.append(metric(y_b, scores_a[idx]) - metric(y_b, scores_b[idx]))
+    return float(np.percentile(diffs, 2.5)), float(np.percentile(diffs, 97.5)), len(diffs)
