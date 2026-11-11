@@ -69,6 +69,13 @@ states the units of the items.
 Licence note: the authors publish the data under CC BY 4.0. The Kaggle copy is a re-upload labelled
 CC0 by someone other than the authors. Citing the paper meets the attribution the original licence asks for.
 
+## Industry codes
+
+| Claim | Value | Source |
+|---|---|---|
+| SIC divisions and the major groups each holds | A: Agriculture, Forestry, and Fishing (major groups 01 to 09). B: Mining (10 to 14). C: Construction (15 to 17). D: Manufacturing (20 to 39). E: Transportation, Communications, Electric, Gas, and Sanitary Services (40 to 49). F: Wholesale Trade (50 to 51). G: Retail Trade (52 to 59). H: Finance, Insurance, and Real Estate (60 to 67). I: Services (70 to 89). J: Public Administration (91 to 99) | US Department of Labor, Occupational Safety and Health Administration, SIC Manual, https://www.osha.gov/data/sic-manual |
+| The file's `Division` letters are SIC divisions (computed here, 2026-11-11) | For all 8,971 companies the `MajorGroup` number falls inside the range the SIC Manual gives for the company's `Division` letter | `data/industry.csv`, written by `tools/get_data.py` from the authors' file at commit `279e427` |
+
 ## Classic scores
 
 Altman (2000) was read from a course-hosted copy because the Stern URL returned HTTP 500 and the

@@ -108,3 +108,13 @@ def test_a_notebook_shows_the_whole_exhibit_with_its_label_as_alt_text():
     data, metadata = viz.notebook_png(fig)
     assert Image.open(io.BytesIO(base64.b64decode(data))).width == 1200
     assert metadata == {"alt": "Exhibit 1: Narrow content. A tight crop would trim the margins."}
+
+
+def test_long_tick_labels_stay_inside_the_exhibit():
+    # Tick labels are set in the wider mono face, so the layout must be fitted with it in place.
+    viz.use_house_style()
+    fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 3))
+    ax.barh(["Transportation, Communications, Electric, Gas, and Sanitary Services"], [1])
+    viz.exhibit(fig, "Long labels", "A note.")
+    fig.canvas.draw()
+    assert min(label.get_window_extent().x0 for label in ax.get_yticklabels()) >= 0

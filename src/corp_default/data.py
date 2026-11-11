@@ -33,22 +33,23 @@ RAW_ITEMS = [name for name in COLUMN_MAP.values() if name != "total_revenue"]
 _FETCH = "Run `uv run python -m tools.get_data` from the repo root, or see data/README.md."
 
 
-def _require(path: Path) -> None:
+def require_file(path: Path) -> None:
+    """Stop with the one command that fetches the data when a file is not there."""
     if not path.exists():
         raise FileNotFoundError(f"{path.name} not found at {path}. {_FETCH}")
 
 
 def load_raw(path: Path = DATA_PATH) -> pd.DataFrame:
     """The panel with readable column names; total_revenue is dropped because it equals net_sales."""
-    _require(path)
+    require_file(path)
     frame = pd.read_csv(path).rename(columns=COLUMN_MAP)
     return frame.drop(columns=["total_revenue"])
 
 
 def load_industry(path: Path = INDUSTRY_PATH, data_path: Path = DATA_PATH) -> pd.DataFrame:
     """SIC division and major group per company, refused unless it covers the panel exactly."""
-    _require(path)
-    _require(data_path)
+    require_file(path)
+    require_file(data_path)
     codes = pd.read_csv(path).drop_duplicates()
     repeated = codes.loc[codes["company_name"].duplicated(), "company_name"]
     if not repeated.empty:

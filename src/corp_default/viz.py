@@ -136,6 +136,9 @@ def exhibit(
     global _count
     _count += 1
     fig.set_label(f"Exhibit {_count}: {title}. {note}")
+    # Tick labels take the mono face first, so the layout is fitted to the labels as drawn.
+    for ax in fig.axes:
+        ax.tick_params(labelfontfamily=_fonts["mono"], labelsize=8.5)
     # Let a constrained layout set the margins around tick labels, freeze it, then grow the figure
     # and move every axes down into the new room.
     if fig.get_layout_engine() is None:
@@ -154,7 +157,6 @@ def exhibit(
                 box.height * old_height / new_height,
             ]
         )
-        ax.tick_params(labelfontfamily=_fonts["mono"], labelsize=8.5)
     fig.set_figheight(new_height)
 
     def at(inches_from_top: float) -> float:

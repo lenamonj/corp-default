@@ -1,0 +1,35 @@
+{
+  "number": 1,
+  "title": "The Panel",
+  "question": "What exactly is in this file?",
+  "goals": [
+    "Load the panel and set the style.",
+    "Know who built the file and how.",
+    "Name every column and where it comes from.",
+    "See who enters, who leaves, and when.",
+    "Measure late arrivals, short histories, and gaps.",
+    "Profile the companies by size, losses, and industry.",
+    "Find the columns that repeat other columns.",
+    "Draw a signed number on a signed scale.",
+    "Name what the file cannot tell us."
+  ],
+  "pitfalls": {
+    "columns": {
+      "name": "Counting columns as information",
+      "naive_label": "Columns of accounts in the file",
+      "naive_value": "{{ch1.items}}",
+      "honest_label": "Independent items among them",
+      "honest_value": "{{ch1.independent}}",
+      "why": "The other columns are copies or exact arithmetic on these, so they add nothing new."
+    },
+    "shift": {
+      "name": "A shifted log axis for a signed number",
+      "naive_label": "Tallest of {{ch1.bars}} bars, shifted log axis",
+      "naive_value": "{{ch1.naive_tallest:.0%}}",
+      "honest_label": "Tallest of {{ch1.bars}} bars, signed log bins",
+      "honest_value": "{{ch1.honest_tallest:.0%}}",
+      "why": "The shift parks every loss and every profit side by side, and one bar swallows them."
+    }
+  },
+  "next": {"title": "The Event", "line": "What does failed mean, and when did it happen?"}
+}
