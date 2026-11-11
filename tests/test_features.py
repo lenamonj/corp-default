@@ -9,7 +9,14 @@ from legacy import (
 )
 
 from corp_default.data import RAW_ITEMS
-from corp_default.features import FAMILIES, add_history, add_ratios, fit_prepare
+from corp_default.features import (
+    FAMILIES,
+    add_history,
+    add_ratios,
+    feature_names,
+    fit_prepare,
+)
+from corp_default.labels import build_label
 
 
 def toy(**items) -> pd.DataFrame:
@@ -101,6 +108,21 @@ def test_history_refuses_a_repeated_company_year():
 
 
 @pytest.mark.needs_data
+def test_feature_names_are_the_columns_the_two_functions_add_in_order():
+    frame = gap_company()
+    built = add_history(add_ratios(frame))
+    assert feature_names() == [name for name in built.columns if name not in frame.columns]
+    assert [name for name in feature_names(lags=(1,)) if name.endswith("2y_ago")] == []
+
+
+def test_no_outcome_column_is_a_feature():
+    frame = gap_company()
+    outcome = set(build_label(frame, 2).columns) - set(frame.columns)
+    assert outcome == {"last_year", "failed", "years_to_final", "target"}
+    assert not outcome & set(feature_names())
+    assert "status_label" not in feature_names()
+
+
 def test_shared_ratios_equal_legacy(raw):
     ours = add_ratios(raw)
     theirs = legacy_add_features(raw.copy())

@@ -120,6 +120,19 @@ def add_history(frame: pd.DataFrame, lags: tuple[int, ...] = (1, 2)) -> pd.DataF
     return frame.assign(**added)
 
 
+def feature_names(lags: tuple[int, ...] = (1, 2)) -> list[str]:
+    """The model inputs in column order: every ratio, then the history add_history builds.
+
+    Nothing else in a chapter's table is an input. The label's own columns are outcomes.
+    """
+    names = [name for members in FAMILIES.values() for name in members]
+    for lag in lags:
+        names += [f"d{lag}_{name}" for name in HISTORY_RATIOS]
+        names += [f"g{lag}_{name}" for name in GROWTH_ITEMS]
+        names.append(f"loss_{lag}y_ago")
+    return [*names, "years_observed"]
+
+
 def fit_prepare(
     train: pd.DataFrame, cols: list[str], impute: bool = True
 ) -> tuple[Callable[[pd.DataFrame], pd.DataFrame], pd.Series, pd.Series, pd.Series]:
