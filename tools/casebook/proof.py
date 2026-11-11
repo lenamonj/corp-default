@@ -25,7 +25,7 @@ from corp_default.features import FAMILIES, add_ratios
 from corp_default.labels import build_label, event_table
 from corp_default.metrics import wilson_interval
 from corp_default.splits import DEV_END, development
-from corp_default.survival import kaplan_meier
+from corp_default.survival import cumulative_incidence, kaplan_meier
 from tools.casebook.components import cover, next_card, opener, pitfall, route, step_curve
 from tools.casebook.studio import LANDING_WIDTH, Studio
 
@@ -57,12 +57,18 @@ SPEC_PALETTE = {
 
 
 def house_marks(events: pd.DataFrame) -> dict[str, dict]:
-    """The two candidate house marks, as step-curve arguments, computed from the event table."""
-    failed_only = kaplan_meier(events["duration"], (events["event"] == "failed").astype(int))
+    """The two candidate house marks, as step-curve arguments, computed from the event table.
+
+    A, chosen at Check Stop 3, is the share not yet failed: one minus the cumulative incidence of
+    failure, with other exits as a competing risk. B, kept for the record, is the share still filing.
+    """
+    incidence = cumulative_incidence(events["duration"], events["event"])
+    not_failed = 1 - incidence["cif_failed"]
     any_exit = kaplan_meier(events["duration"], (events["event"] != "reporting").astype(int))
-    a_points = [(0, 1.0), *zip(failed_only["time"], failed_only["survival"])]
+    a_points = [(0, 1.0), *zip(incidence["time"], not_failed)]
     b_points = [(0, 1.0), *zip(any_exit["time"], any_exit["survival"])]
-    low = float(np.floor(failed_only["survival"].min() * 20) / 20)
+    low = float(np.floor(not_failed.min() * 20) / 20)
+    failed_only = kaplan_meier(events["duration"], (events["event"] == "failed").astype(int))
     failure_times = failed_only.loc[failed_only["events"] > 0, "time"].tolist()
     return {
         "A": {
