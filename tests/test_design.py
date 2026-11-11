@@ -1,3 +1,4 @@
+import itertools
 from pathlib import Path
 
 import pytest
@@ -75,3 +76,120 @@ def test_the_design_css_carries_the_tokens_and_the_fonts():
         assert token in css
     for family in ("Archivo", "Public Sans", "JetBrains Mono"):
         assert f'font-family: "{family}"' in css
+
+
+# The longest words the spec gives each component.
+LONGEST_QUESTION = "Where in the accounts does failure show, and how early?"
+TWELVE_PARTS = [
+    ("Setting Up", 2),
+    ("From Dollars to Ratios", 6),
+    ("Looking at Skewed Ratios", 4),
+    ("Anatomy of a Failure", 6),
+    ("Failure Rate Along Each Ratio", 5),
+    ("Why the Worst-Looking Firms Are Not the Riskiest", 5),
+    ("Ranking the Signals One at a Time", 4),
+    ("Redundancy", 3),
+    ("The Risk Map", 3),
+    ("History Matters", 5),
+    ("The Ground Is Moving", 5),
+    ("Do Raw Dollars and Industry Earn Their Place", 4),
+]
+SURVIVAL = [(0, 1.0), (1, 0.97), (2, 0.95), (3, 0.95), (4, 0.91), (5, 0.88), (6, 0.88)]
+
+
+def _width(path):
+    from PIL import Image
+
+    return Image.open(path).size[0]
+
+
+def _curve(marker=None):
+    from tools.casebook.components import step_curve
+
+    return step_curve(SURVIVAL, 1200, 160, (64, 20, 1136, 140), marker=marker, ticks=[1, 4])
+
+
+@pytest.mark.parametrize(
+    ("number", "title", "question"),
+    [(1, "The Panel", "What exactly is in this file?"), (4, "The Yardstick", LONGEST_QUESTION)],
+)
+def test_cover_draws_at_both_ends_of_the_spec(studio, tmp_path, number, title, question):
+    from tools.casebook.components import cover
+
+    html = cover(number, title, question, 45, _curve(marker=3))
+    assert _width(studio.png(html, tmp_path / "cover.png")) == 2400
+
+
+@pytest.mark.parametrize("count", [3, 9, 12])
+def test_route_draws_up_to_twelve_parts(studio, tmp_path, count):
+    from tools.casebook.components import route
+
+    html = route(TWELVE_PARTS[:count], "ABOUT 50 MIN")
+    assert _width(studio.png(html, tmp_path / "route.png")) == 2400
+
+
+def test_opener_draws_and_refuses_a_goal_over_eight_words(studio, tmp_path):
+    from tools.casebook.components import opener
+
+    html = opener(12, 12, "Tell drift from signal before trusting a score.", 5)
+    assert _width(studio.png(html, tmp_path / "opener.png")) == 2400
+    with pytest.raises(ValueError, match="eight words"):
+        opener(1, 9, "One two three four five six seven eight nine.", 3)
+
+
+def test_pitfall_draws(studio, tmp_path):
+    from tools.casebook.components import pitfall
+
+    html = pitfall(
+        "A row shift across a reporting gap",
+        "ROWS MIS-PAIRED BY SHIFT",
+        "1,234",
+        "MIS-PAIRED BY A CALENDAR JOIN",
+        "0",
+        "A shift pairs neighbours in the file, not neighbours in time.",
+    )
+    assert _width(studio.png(html, tmp_path / "pitfall.png")) == 2400
+
+
+def test_diagram_parts_draw_on_a_figure_plate(studio, tmp_path):
+    from tools.casebook.components import arrows, box, figure_plate, stage, timebar, words
+
+    body = stage(
+        1000,
+        160,
+        box(0, 0, 200, 60),
+        words(0, 20, 200, "Observation year t", "b"),
+        timebar(220, 0, 300, 28, "train", "TRAIN"),
+        timebar(530, 0, 120, 28, "embargo", "EMBARGO"),
+        timebar(660, 0, 120, 28, "valid", "VALID"),
+        timebar(790, 0, 200, 28, "holdout", "HOLDOUT"),
+        timebar(220, 60, 200, 28, "label", "LABEL WINDOW"),
+        arrows(1000, 160, (100, 60, 100, 120), (220, 100, 420, 100, "dash")),
+    )
+    html = figure_plate(body, "One firm-year and the two years its label looks ahead.")
+    assert _width(studio.png(html, tmp_path / "diagram.png")) == 2400
+
+
+def test_timebar_refuses_an_unknown_kind():
+    from tools.casebook.components import timebar
+
+    with pytest.raises(ValueError, match="kind"):
+        timebar(0, 0, 10, 10, "test")
+
+
+def test_next_card_draws(studio, tmp_path):
+    from tools.casebook.components import next_card
+
+    html = next_card("NEXT", "CHAPTER 4", "The Yardstick", "How will we know a model is good?")
+    assert _width(studio.png(html, tmp_path / "next.png")) == 2400
+
+
+def test_step_curve_only_moves_right_and_down_for_a_survival_input():
+    import re
+
+    path = re.search(r'<path class="step" d="([^"]+)"', _curve()).group(1)
+    numbers = [float(n) for n in re.findall(r"-?\d+(?:\.\d+)?", path)]
+    xs, ys = numbers[0::2], numbers[1::2]
+    assert all(b >= a for a, b in itertools.pairwise(xs))
+    assert all(b >= a for a, b in itertools.pairwise(ys))  # SVG y grows downward
+    assert xs[0] == 64 and xs[-1] == 1136
