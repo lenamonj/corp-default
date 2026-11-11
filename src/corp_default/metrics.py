@@ -54,7 +54,7 @@ def within_year_percentile(scores: pd.Series, years: pd.Series) -> pd.Series:
     return scores.groupby(years).rank(pct=True)
 
 
-def _company_resamples(y_true: np.ndarray, groups, n_boot: int, seed: int) -> Iterator[np.ndarray]:
+def company_resamples(y_true: np.ndarray, groups, n_boot: int, seed: int) -> Iterator[np.ndarray]:
     """Row indices of each usable company resample, in the published notebook's draw order.
 
     A resample with no positive or no negative is skipped; the caller counts what it receives.
@@ -85,7 +85,7 @@ def cluster_bootstrap_ci(
     """95% interval of `metric` resampling whole companies, and how many resamples were usable."""
     y_true, scores = np.asarray(y_true), np.asarray(scores)
     stats = [
-        metric(y_true[idx], scores[idx]) for idx in _company_resamples(y_true, groups, n_boot, seed)
+        metric(y_true[idx], scores[idx]) for idx in company_resamples(y_true, groups, n_boot, seed)
     ]
     return _interval(stats, n_boot)
 
@@ -97,7 +97,7 @@ def paired_bootstrap_diff_ci(
     y_true, scores_a, scores_b = np.asarray(y_true), np.asarray(scores_a), np.asarray(scores_b)
     diffs = [
         metric(y_true[idx], scores_a[idx]) - metric(y_true[idx], scores_b[idx])
-        for idx in _company_resamples(y_true, groups, n_boot, seed)
+        for idx in company_resamples(y_true, groups, n_boot, seed)
     ]
     return _interval(diffs, n_boot)
 
