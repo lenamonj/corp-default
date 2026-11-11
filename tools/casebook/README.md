@@ -101,7 +101,7 @@ Jupyter crops a figure to its ink by default, which would give every exhibit a d
 
 ## The time rule
 
-Times on a cover, a route, and an opener come from one rule, so they mean the same thing in every chapter: 150 words a minute, half a minute for each code cell, one minute for each exhibit, three minutes for each extension in Your Turn. A part's time is a whole number of minutes, at least one. The cover's total is rounded to five. A picture is read by its alt text; picture data and markup are not counted.
+Times on a cover, a route, and an opener come from one rule, so they mean the same thing in every chapter: 150 words a minute, half a minute for each code cell, one minute for each exhibit, three minutes for each extension in Your Turn. A part's time is a whole number of minutes, at least one. The cover's total is rounded to five. A chapter takes at most 60 minutes by this rule, Your Turn included: a test reads the time from the cover and fails a longer chapter. A picture is read by its alt text; picture data and markup are not counted.
 
 ## Building a chapter
 

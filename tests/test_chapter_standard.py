@@ -4,6 +4,7 @@ The fixture chapter is always checked, so the rules run even while notebooks/ is
 is also run on a broken copy of the fixture: a rule that cannot fail proves nothing when it passes.
 """
 
+import re
 from pathlib import Path
 
 import nbformat
@@ -78,6 +79,15 @@ def _drop_pitfall_from_chapter_two(ch: Chapter) -> None:
     ch.cells[:] = [cell for cell in ch.cells if not cell.source.startswith("![Pitfall: ")]
 
 
+def _cover_says(ch: Chapter, minutes: int) -> None:
+    """Rewrite the time on the cover."""
+    cover = ch.cells[0]
+    cover.source, changed = re.subn(
+        r"About \d+ minutes\.", f"About {minutes} minutes.", cover.source
+    )
+    assert changed == 1
+
+
 # One way to break the fixture chapter for each rule.
 BREAKS = {
     "cover_first": lambda ch: ch.cells.pop(0),
@@ -100,6 +110,7 @@ BREAKS = {
     "no_error_output": _add_error,
     "no_style_no_img": lambda ch: ch.cells.insert(3, _markdown('<p style="color:red">Red</p>')),
     "size": lambda ch: setattr(ch, "size", MAX_BYTES + 1),
+    "reading_time": lambda ch: _cover_says(ch, 65),
 }
 
 
@@ -139,3 +150,21 @@ def test_a_bare_log_scale_in_a_chapter_is_named(tmp_path):
 
 def test_every_log_axis_in_a_chapter_goes_through_the_house_style():
     assert bare_log_scales(NOTEBOOKS.parent / "chapters") == []
+
+
+def test_a_chapter_of_sixty_minutes_is_within_the_ceiling(built):
+    ch = Chapter.read(built.path)
+    _cover_says(ch, 60)
+    assert RULES["reading_time"](ch) == []
+
+
+def test_a_chapter_over_sixty_minutes_is_told_its_time_and_the_ceiling(built):
+    ch = Chapter.read(built.path)
+    _cover_says(ch, 65)
+    assert RULES["reading_time"](ch) == ["the chapter takes about 65 minutes, and the most is 60"]
+
+
+def test_a_cover_that_gives_no_time_is_named(built):
+    ch = Chapter.read(built.path)
+    ch.cells[0].source = re.sub(r" About \d+ minutes\.", "", ch.cells[0].source)
+    assert RULES["reading_time"](ch) == ["the cover does not say how long the chapter takes"]

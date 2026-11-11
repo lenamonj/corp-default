@@ -28,6 +28,8 @@ FRONT = ["## The Question", "## What You Will Learn", "## What You Need", "## Yo
 CHAPTERS = 7
 MAX_PARTS = 12
 MAX_BYTES = 3_000_000
+MAX_MINUTES = 60  # a reader's time for one chapter by the time rule, Your Turn included
+COVER_TIME = re.compile(r"About (\d+) minutes\.$")
 SHOW_ANSWER = "<summary>Show the answer</summary>"
 KERNEL = "Jupyter kernel `corp-default`"
 QUICK_START = "(../README.md#quick-start)"  # where the README says how to register the kernel
@@ -316,6 +318,16 @@ def size(ch: Chapter) -> list[str]:
     return [f"the notebook is {ch.size / 1e6:.2f} MB, and the most is {MAX_BYTES / 1e6:.0f} MB"]
 
 
+def reading_time(ch: Chapter) -> list[str]:
+    cover = PICTURE.fullmatch(ch.cells[0].source)
+    said = COVER_TIME.search(cover.group(1)) if cover else None
+    if said is None:
+        return ["the cover does not say how long the chapter takes"]
+    if int(said.group(1)) <= MAX_MINUTES:
+        return []
+    return [f"the chapter takes about {said.group(1)} minutes, and the most is {MAX_MINUTES}"]
+
+
 RULES = {
     rule.__name__: rule
     for rule in (
@@ -339,5 +351,6 @@ RULES = {
         no_error_output,
         no_style_no_img,
         size,
+        reading_time,
     )
 }
