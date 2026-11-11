@@ -144,7 +144,7 @@ Reserved Font Name. Each project ships static TTF files at the needed weights, s
 
 | Claim | Value | Source |
 |---|---|---|
-| uv build backend | `[build-system] requires = ["uv_build>=X,<Y"]`, `build-backend = "uv_build"`; default module discovery is `src/<normalised project name>/__init__.py`. The page's current example is `uv_build>=0.13.7,<0.14` (uv and uv-build 0.13.7 on PyPI, released 2026-11-03). This repo pins `uv_build>=0.11.32,<0.12` to match the uv installed on the build machine, 0.11.32 | https://docs.astral.sh/uv/concepts/build-backend/ |
+| uv build backend | `[build-system] requires = ["uv_build>=X,<Y"]`, `build-backend = "uv_build"`; default module discovery is `src/<normalised project name>/__init__.py`. The page's current example, and this repo's pin, is `uv_build>=0.13.7,<0.14` (uv and uv-build 0.13.7 on PyPI, released 2026-11-03). uv 0.12.0 changed nothing in the build backend's configuration | https://docs.astral.sh/uv/concepts/build-backend/; https://github.com/astral-sh/uv/blob/0.13.5/changelogs/0.12.x.md |
 | PyTorch CPU wheels with uv | An index `pytorch-cpu` at `https://download.pytorch.org/whl/cpu` with `explicit = true`, bound to `torch` under `[tool.uv.sources]` | https://docs.astral.sh/uv/guides/integration/pytorch/ |
 
 ## Not verified
