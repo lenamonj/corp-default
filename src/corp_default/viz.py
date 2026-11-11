@@ -175,11 +175,29 @@ def exhibit(
         fig.savefig(GALLERY / f"{save_as}.png")
 
 
+def plain_number(value: float, position: int | None = None) -> str:
+    """A tick label a reader can say aloud: 10,000 or 0.01, never a power of ten."""
+    return f"{value:,.10f}".rstrip("0").rstrip(".")
+
+
+def log_axis(ax, axis: str = "x") -> None:
+    """A log scale whose ticks read as plain numbers."""
+    if axis == "x":
+        ax.set_xscale("log")
+        ax.xaxis.set_major_formatter(plain_number)
+    else:
+        ax.set_yscale("log")
+        ax.yaxis.set_major_formatter(plain_number)
+
+
 def symlog_axis(ax, axis: str = "x", linthresh: float = 1.0) -> None:
-    """A symmetric-log scale for a signed quantity: linear within +/- linthresh, log beyond it."""
+    """A symmetric-log scale for a signed quantity: linear within +/- linthresh, log beyond it.
+    Its ticks read as plain numbers."""
     if axis == "x":
         ax.set_xscale("symlog", linthresh=linthresh)
+        ax.xaxis.set_major_formatter(plain_number)
         ax.axvline(0, color=RULE, linewidth=0.8, zorder=0)
     else:
         ax.set_yscale("symlog", linthresh=linthresh)
+        ax.yaxis.set_major_formatter(plain_number)
         ax.axhline(0, color=RULE, linewidth=0.8, zorder=0)

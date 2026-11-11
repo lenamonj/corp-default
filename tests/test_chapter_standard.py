@@ -117,3 +117,25 @@ def test_a_rule_reports_a_broken_chapter(rule, built):
     broken = Chapter.read(built.path)
     BREAKS[rule](broken)
     assert RULES[rule](broken) != []
+
+
+BARE_LOG = ('set_xscale("log")', 'set_yscale("log")')
+
+
+def bare_log_scales(folder: Path) -> list[str]:
+    """Chapter sources that set a log scale without the house style's readable ticks."""
+    return [
+        path.name
+        for path in sorted(folder.glob("[0-9][0-9]_*.py"))
+        if any(call in path.read_text(encoding="utf-8") for call in BARE_LOG)
+    ]
+
+
+def test_a_bare_log_scale_in_a_chapter_is_named(tmp_path):
+    (tmp_path / "03_the_signal.py").write_text('ax.set_xscale("log")\n', encoding="utf-8")
+    (tmp_path / "04_the_yardstick.py").write_text('viz.log_axis(ax, "x")\n', encoding="utf-8")
+    assert bare_log_scales(tmp_path) == ["03_the_signal.py"]
+
+
+def test_every_log_axis_in_a_chapter_goes_through_the_house_style():
+    assert bare_log_scales(NOTEBOOKS.parent / "chapters") == []

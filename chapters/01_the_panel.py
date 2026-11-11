@@ -662,7 +662,7 @@ store.put("assets_span", np.log10(assets.quantile(0.99) / assets.quantile(0.01))
 
 fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 3.4))
 ax.hist(assets, bins=bins, color=viz.SLATE)
-ax.set_xscale("log")
+viz.log_axis(ax, "x")
 ax.set_ylim(top=ax.get_ylim()[1] * 1.12)
 ax.axvline(quartiles.loc[0.5], color=viz.INK, linewidth=1.2)
 ax.text(
@@ -799,7 +799,7 @@ ax.scatter(order[kept], relative[kept], s=36, color=viz.INK, zorder=3,
            label=f"{independent} independent directions")  # fmt: skip
 ax.scatter(order[~kept], np.maximum(relative[~kept], FLOOR), s=36, facecolor=viz.SHEET,
            edgecolor=viz.INK, zorder=3, label=f"{len(items) - independent} that repeat the others")  # fmt: skip
-ax.set_yscale("log")
+viz.log_axis(ax, "y")
 ax.set_ylim(FLOOR / 3, 3)
 ax.set_xticks(order)
 ax.grid(axis="x", visible=False)
@@ -810,7 +810,7 @@ viz.exhibit(
     fig,
     f"The {len(items)} columns hold {independent} independent directions",
     f"After the first {independent}, the singular values fall off a cliff. "
-    f"Values under {FLOOR:.0e} are drawn at the lower edge.",
+    "Any too small to draw sit at the lower edge.",
     SOURCE,
 )
 
@@ -889,7 +889,7 @@ shifted = income - income.min() + 1
 
 fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 3.2))
 naive_counts, _, _ = ax.hist(shifted, bins=BARS, color=viz.SLATE)
-ax.set_xscale("log")
+viz.log_axis(ax, "x")
 ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:,.0f}"))
 ax.set_xlabel("Net income, shifted to be positive (log scale)")
 ax.set_ylabel("Firm-years")
@@ -927,7 +927,6 @@ fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 3.4))
 honest_counts, _, _ = ax.hist(income, bins=signed_bins, color=viz.SLATE)
 viz.symlog_axis(ax, "x", linthresh=1.0)
 ax.set_xticks([-1e4, -1e2, -1, 0, 1, 1e2, 1e4])
-ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:,.0f}"))
 ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:,.0f}"))
 ax.set_xlabel("Net income, in file units (symmetric-log scale)")
 ax.set_ylabel("Firm-years")
@@ -977,7 +976,6 @@ for row, item in enumerate(ordered):
     ax.plot([raw[item].median()] * 2, [row - 0.42, row + 0.42], color=viz.INK, linewidth=1.4)
 viz.symlog_axis(ax, "x", linthresh=1.0)
 ax.set_xticks([-1e4, -1e2, -1, 0, 1, 1e2, 1e4, 1e6])
-ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:,.0f}"))
 ax.set_yticks(range(len(ordered)), ordered)
 ax.grid(axis="y", visible=False)
 ax.set_xlabel("Value, in file units (symmetric-log scale)")

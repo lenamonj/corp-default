@@ -118,3 +118,45 @@ def test_long_tick_labels_stay_inside_the_exhibit():
     viz.exhibit(fig, "Long labels", "A note.")
     fig.canvas.draw()
     assert min(label.get_window_extent().x0 for label in ax.get_yticklabels()) >= 0
+
+
+def test_plain_number_is_a_number_a_reader_can_say():
+    assert viz.plain_number(1_000_000) == "1,000,000"
+    assert viz.plain_number(100) == "100"
+    assert viz.plain_number(0.01) == "0.01"
+    assert viz.plain_number(1e-8) == "0.00000001"
+    assert viz.plain_number(0) == "0"
+    assert viz.plain_number(-10_000) == "-10,000"
+    assert viz.plain_number(2.5) == "2.5"
+
+
+def _tick_labels(fig, axis) -> list[str]:
+    fig.canvas.draw()
+    return [label.get_text() for label in axis.get_ticklabels() if label.get_text()]
+
+
+def test_a_log_axis_shows_plain_numbers_not_powers_of_ten():
+    viz.use_house_style()
+    fig, ax = plt.subplots()
+    ax.plot([0.01, 1_000_000], [1, 2])
+    viz.log_axis(ax, "x")
+    labels = _tick_labels(fig, ax.xaxis)
+    assert {"0.01", "1", "100", "10,000", "1,000,000"} <= set(labels)
+    assert not any("10^" in label or "mathdefault" in label for label in labels)
+
+
+def test_a_log_axis_can_be_the_y_axis():
+    viz.use_house_style()
+    fig, ax = plt.subplots()
+    ax.plot([1, 2], [1, 1e-6])
+    viz.log_axis(ax, "y")
+    assert {"1", "0.01", "0.0001", "0.000001"} <= set(_tick_labels(fig, ax.yaxis))
+
+
+def test_a_symlog_axis_shows_plain_numbers_on_both_sides_of_zero():
+    viz.use_house_style()
+    fig, ax = plt.subplots()
+    ax.plot([-10_000, 10_000], [1, 2])
+    viz.symlog_axis(ax, "x")
+    ax.set_xticks([-10_000, -100, 0, 100, 10_000])
+    assert _tick_labels(fig, ax.xaxis) == ["-10,000", "-100", "0", "100", "10,000"]

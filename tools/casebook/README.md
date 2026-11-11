@@ -95,7 +95,7 @@ Each function in `components.py` returns the HTML of one component, styled by `d
 
 `viz.use_house_style()` sets the matplotlib style, registers the fonts, and starts exhibit numbering at 1. `viz.exhibit(fig, title, note, source, save_as)` frames a finished chart. Give a figure `figsize=(viz.EXHIBIT_WIDTH_IN, height)`: 8 inches at 150 dpi is 1200 px.
 
-Chart rules: one message to an exhibit; direct labels in place of a legend where they fit; a signed quantity on a symmetric-log axis (`viz.symlog_axis`); an interval wherever a rate or a metric is shown; no dual axes; no default colour cycle, so every colour is a choice.
+Chart rules: one message to an exhibit; direct labels in place of a legend where they fit; a signed quantity on a symmetric-log axis (`viz.symlog_axis`); a log axis set with `viz.log_axis`, so its ticks read as numbers a reader can say (10,000 and 0.01), never as powers of ten; an interval wherever a rate or a metric is shown; no dual axes; no default colour cycle, so every colour is a choice.
 
 Jupyter crops a figure to its ink by default, which would give every exhibit a different width. `use_house_style` replaces that with the whole canvas, and gives each exhibit its alt text: `Exhibit n: title. note`. The tests, the time rule, and `check --text` all read an exhibit by that alt text.
 
