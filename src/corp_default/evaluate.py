@@ -8,7 +8,7 @@ import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 from corp_default.metrics import capture_rate, company_resamples, within_year_percentile
-from corp_default.splits import Fold
+from corp_default.splits import CRISIS_FOLDS, Fold
 
 BUDGETS = (0.01, 0.05, 0.10)
 SEED = 42
@@ -123,4 +123,36 @@ def paired_table(
             for idx in company_resamples(y, groups, n_boot, SEED)
         ]
         rows.append({"model": rung, "against": before} | _with_intervals(point, draws, n_boot))
+    return pd.DataFrame(rows)
+
+
+def _fold_metrics(y: np.ndarray, pct: np.ndarray) -> dict[str, float]:
+    return {
+        "roc_auc": roc_auc_score(y, pct),
+        "capture_5": capture_rate(y, pct, (0.05,))["capture_rate"].iloc[0],
+    }
+
+
+def fold_table(oof: pd.DataFrame, n_boot: int = 1000) -> pd.DataFrame:
+    """ROC-AUC and capture at 5% for each fold year, then pooled over crisis and calm folds.
+
+    Average precision is left out: it moves with the base rate, which differs between folds.
+    """
+    crisis = oof["year"].isin(CRISIS_FOLDS)
+    parts = [
+        (str(year), year in CRISIS_FOLDS, oof["year"] == year) for year in sorted(set(oof["year"]))
+    ]
+    parts += [("crisis folds", True, crisis), ("calm folds", False, ~crisis)]
+    rows = []
+    for label, is_crisis, mask in parts:
+        part = oof.loc[mask]
+        y, pct = part["target"].to_numpy(), part["pct"].to_numpy()
+        draws = [
+            _fold_metrics(y[idx], pct[idx])
+            for idx in company_resamples(y, part["company_name"], n_boot, SEED)
+        ]
+        rows.append(
+            {"fold": label, "crisis": is_crisis, "rows": len(y), "positives": int(y.sum())}
+            | _with_intervals(_fold_metrics(y, pct), draws, n_boot)
+        )
     return pd.DataFrame(rows)

@@ -9,6 +9,16 @@ DEV_END = 2011
 HOLDOUT = (2014, 2016)
 FOLD_YEARS = tuple(range(2005, DEV_END + 1))
 
+# The 2007 to 2009 recession's filings fall in 2008 and 2009. A final filed year is the fiscal year
+# before the filing, so those events are final years 2007 and 2008. A fold is a crisis fold when its
+# label window, final years Y + 1 to Y + HORIZON, reaches either. Fixed before any fold is scored.
+CRISIS_FINAL_YEARS = (2007, 2008)
+CRISIS_FOLDS = tuple(
+    year
+    for year in FOLD_YEARS
+    if set(range(year + 1, year + HORIZON + 1)) & set(CRISIS_FINAL_YEARS)
+)
+
 
 class SealedHoldoutError(RuntimeError):
     """Raised when the holdout is read before Chapter 7 opens it."""

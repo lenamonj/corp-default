@@ -3,9 +3,9 @@ import pandas as pd
 import pytest
 from sklearn.metrics import roc_auc_score
 
-from corp_default.evaluate import paired_table, scoreboard, walk_forward_oof
+from corp_default.evaluate import fold_table, paired_table, scoreboard, walk_forward_oof
 from corp_default.metrics import cluster_bootstrap_ci
-from corp_default.splits import HORIZON, walk_forward_folds
+from corp_default.splits import CRISIS_FOLDS, HORIZON, walk_forward_folds
 
 
 @pytest.fixture(scope="module")
@@ -106,3 +106,18 @@ def test_paired_table_compares_each_rung_with_the_one_before(panel):
         0.0,
         0.0,
     )
+
+
+def test_fold_table_gives_each_fold_and_the_crisis_and_calm_pools(panel):
+    oof = walk_forward_oof(by_signal, panel, walk_forward_folds(panel))
+    table = fold_table(oof, n_boot=50).set_index("fold")
+    assert list(table.index) == [str(y) for y in range(2005, 2012)] + ["crisis folds", "calm folds"]
+    assert list(table["crisis"]) == [True] * 3 + [False] * 4 + [True, False]
+    assert table.loc["crisis folds", "rows"] == table.loc[["2005", "2006", "2007"], "rows"].sum()
+    crisis = oof[oof["year"].isin(CRISIS_FOLDS)]
+    lo, hi, usable = cluster_bootstrap_ci(
+        crisis["target"], crisis["pct"], crisis["company_name"], roc_auc_score, n_boot=50
+    )
+    row = table.loc["crisis folds"]
+    assert (row["roc_auc_lo"], row["roc_auc_hi"], row["usable"]) == (lo, hi, usable)
+    assert {"capture_5", "capture_5_lo", "capture_5_hi"} <= set(table.columns)

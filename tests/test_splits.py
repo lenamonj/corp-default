@@ -3,6 +3,8 @@ import pytest
 
 from corp_default.labels import build_label
 from corp_default.splits import (
+    CRISIS_FINAL_YEARS,
+    CRISIS_FOLDS,
     DEV_END,
     FOLD_YEARS,
     HOLDOUT,
@@ -65,3 +67,17 @@ def test_folds_on_the_panel_match_the_review(raw):
     assert sum(positives) == 512
     first = frame.loc[folds[0].train]
     assert (len(first), int(first["target"].sum())) == (20_045, 155)
+
+
+def test_crisis_folds_are_those_whose_labels_reach_the_2008_and_2009_filings():
+    # A final filed year precedes the filing year, so 2008 and 2009 filings are final years 2007, 2008.
+    assert CRISIS_FINAL_YEARS == (2007, 2008)
+    assert CRISIS_FOLDS == (2005, 2006, 2007)
+
+
+@pytest.mark.needs_data
+def test_crisis_event_positives_by_fold(raw):
+    frame = development(build_label(raw, HORIZON))
+    crisis = frame["target"].eq(1) & frame["last_year"].isin(CRISIS_FINAL_YEARS)
+    by_year = crisis.groupby(frame["year"]).sum()
+    assert [int(by_year.loc[year]) for year in FOLD_YEARS] == [55, 114, 57, 0, 0, 0, 0]
