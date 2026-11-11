@@ -54,6 +54,7 @@ A chapter is built in this order. "Drawn" parts come from `components.py` by way
 | Route | Typed heading, drawn `route` | Under `## Your Route`: the parts in order on a rail, the minutes under each, then one line of time. |
 | Part opener | Drawn: `opener`, in a cell of its own | Before each `# ` part heading: which part of how many, its goal in one short sentence, about how many minutes. |
 | Part | Typed | At most 12. The first is `# Setting Up`. A part heading starts its cell. |
+| Setting Up | Typed, code | Opens with the kernel line: select `corp-default`, then a link to the README's Quick Start for trouble. It loads the data and shows it plainly before anything is done to it: the first rows with `head()`, the size and column types with `shape` and `info()`, a summary with `describe().T`. No slice or trick comes before the reader has seen the whole table. |
 | Step | Typed, code, typed | A line starting `Q. `, a code cell, then `**Reading.**` and one or two lines on what the output shows. A bold sentence hands off to the next step. |
 | Predict | Typed | `**Predict N.**` asks the reader to commit to a number before a key result. At least two a chapter. |
 | Exhibit | A code cell's output | A chart framed by `viz.exhibit`: an EXHIBIT n tag, a title that states the finding, one line on what to notice, a source line. Numbered from 1 in each chapter. The text refers to it as "Exhibit 4". |

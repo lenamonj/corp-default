@@ -3,7 +3,7 @@
   "title": "The Panel",
   "question": "What exactly is in this file?",
   "goals": [
-    "Load the panel and set the style.",
+    "Load the panel and take a first look.",
     "Know who built the file and how.",
     "Name every column and where it comes from.",
     "See who enters, who leaves, and when.",

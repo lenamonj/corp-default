@@ -26,6 +26,8 @@ CHAPTERS = 7
 MAX_PARTS = 12
 MAX_BYTES = 3_000_000
 SHOW_ANSWER = "<summary>Show the answer</summary>"
+KERNEL = "`corp-default`"
+QUICK_START = "(../README.md#quick-start)"  # where the README says how to register the kernel
 HINT = "<summary>Hint</summary>"
 
 
@@ -161,6 +163,14 @@ def parts_and_openers(ch: Chapter) -> list[str]:
     return faults
 
 
+def kernel_line(ch: Chapter) -> list[str]:
+    at = ch.find("# Setting Up")
+    lines = [line for line in ch.cells[at[0]].source.split("\n") if line.strip()] if at else []
+    if len(lines) > 2 and KERNEL in lines[1] and QUICK_START in lines[2]:
+        return []
+    return ["Setting Up does not open with the kernel line and its link to the Quick Start"]
+
+
 def exhibits_numbered(ch: Chapter) -> list[str]:
     return [
         f"chart {place} is labelled {alt[:40]!r}: every chart is an exhibit, numbered in order"
@@ -290,6 +300,7 @@ RULES = {
         front_matter,
         route_drawn,
         parts_and_openers,
+        kernel_line,
         exhibits_numbered,
         exhibits_cited_exist,
         picture_widths,

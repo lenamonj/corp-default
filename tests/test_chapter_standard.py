@@ -85,6 +85,7 @@ BREAKS = {
     "front_matter": lambda ch: _replace(ch, "- how a pitfall becomes a plate.", ""),
     "route_drawn": lambda ch: _replace(ch, "**Time.** About", "About"),
     "parts_and_openers": lambda ch: ch.cells.pop(ch.parts()[1] - 1),
+    "kernel_line": lambda ch: _replace(ch, "the kernel `corp-default`", "the right kernel"),
     "exhibits_numbered": _relabel_first_chart,
     "exhibits_cited_exist": lambda ch: _replace(ch, "(Exhibit 2)", "(Exhibit 9)"),
     "picture_widths": _shrink_first_chart,
@@ -99,6 +100,11 @@ BREAKS = {
     "no_style_no_img": lambda ch: ch.cells.insert(3, _markdown('<p style="color:red">Red</p>')),
     "size": lambda ch: setattr(ch, "size", MAX_BYTES + 1),
 }
+
+
+def test_the_readme_has_the_section_the_kernel_line_links_to():
+    readme = (NOTEBOOKS.parent / "README.md").read_text(encoding="utf-8")
+    assert "\n## Quick Start\n" in readme
 
 
 def test_every_rule_has_a_way_to_fail():

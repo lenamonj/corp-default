@@ -32,6 +32,9 @@
 # %% [markdown]
 # # Setting Up
 #
+# Make sure the kernel `corp-default` is selected before you run a cell.
+# If it is not in the list, or an import fails, the [Quick Start](../README.md#quick-start) shows how to register it and refresh the list.
+#
 # Q. What does every chapter do first?
 
 # %%

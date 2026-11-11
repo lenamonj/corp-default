@@ -37,6 +37,9 @@
 # %% [markdown]
 # # Setting Up
 #
+# Make sure the kernel `corp-default` is selected before you run a cell.
+# If it is not in the list, or an import fails, the [Quick Start](../README.md#quick-start) shows how to register it and refresh the list.
+#
 # Q. What does the chapter need before its first question?
 
 # %%
@@ -66,11 +69,50 @@ SOURCE = "Lombardo et al. (2022), Kaggle copy"
 
 raw = load_raw()
 industry = load_industry()
-raw.iloc[:5, :8]
 
 # %% [markdown]
 # **Reading.** The panel is in memory with readable column names, and the house style is set for every chart.
 # `store.put` carries a number from a cell into the text, so no number in this chapter is typed by hand.
+#
+# Q. What does the table look like?
+
+# %%
+raw.head()
+
+# %% [markdown]
+# **Reading.** Each row is one company in one year.
+# The first columns say which company, what its flag is, and which year, and the rest are lines from that year's accounts.
+#
+# Q. How large is the table, and what does each column hold?
+
+# %%
+store.put("columns", raw.shape[1])
+store.put("raw_items", len(RAW_ITEMS))
+
+print(raw.shape)
+raw.info()
+
+# %% [markdown]
+# **Reading.** The table has {{ch1.firm_years:,}} rows and {{ch1.columns}} columns, and no column is missing a value.
+# The company code and the flag are text, the year is a whole number, and the other {{ch1.raw_items}} columns are decimals.
+#
+# Q. What values does each column take?
+
+# %%
+summary = raw.describe().T
+# The reading below says every account's mean is above its median. Checked here.
+assert (summary.loc[RAW_ITEMS, "mean"] > summary.loc[RAW_ITEMS, "50%"]).all()
+store.put(
+    "assets_mean_to_median",
+    summary.loc["total_assets", "mean"] / summary.loc["total_assets", "50%"],
+)
+
+summary.round(1)
+
+# %% [markdown]
+# **Reading.** In every account the mean is above the median, the `50%` column: for total assets it is {{ch1.assets_mean_to_median:.0f}} times as large.
+# Several minimums are negative, because a line of earnings can be a loss.
+# A few very large companies and a good many losses shape every chart in this chapter.
 #
 # **Next, where the file comes from.**
 
@@ -913,7 +955,6 @@ OFTEN = 0.01  # an account is called signed when more than this share of its row
 signed = [item for item in RAW_ITEMS if (raw[item] < 0).mean() > OFTEN]
 store.put("often", OFTEN)
 store.put("signed_items", len(signed))
-store.put("raw_items", len(RAW_ITEMS))
 
 viz.exhibit(
     fig,
