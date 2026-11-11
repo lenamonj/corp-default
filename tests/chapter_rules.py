@@ -29,7 +29,7 @@ CHAPTERS = 7
 MAX_PARTS = 12
 MAX_BYTES = 3_000_000
 SHOW_ANSWER = "<summary>Show the answer</summary>"
-KERNEL = "`corp-default`"
+KERNEL = "Jupyter kernel `corp-default`"
 QUICK_START = "(../README.md#quick-start)"  # where the README says how to register the kernel
 HINT = "<summary>Hint</summary>"
 
