@@ -1,0 +1,29 @@
+{
+  "number": 3,
+  "title": "The Signal",
+  "question": "Where in the accounts does failure show, and how early?",
+  "goals": [
+    "Learn the new columns, then load and look.",
+    "Turn dollar items into ratios, family by family.",
+    "Compare the two outcomes without bins.",
+    "Follow failed companies back from their last filing.",
+    "Read the failure rate along each ratio.",
+    "See why the largest losses are not riskiest.",
+    "Score each ratio alone, as a model.",
+    "Find the ratios that repeat each other.",
+    "Map the risk on leverage and profitability.",
+    "Add what changed, paired by calendar year.",
+    "Measure how far the ratios drift between eras."
+  ],
+  "pitfalls": {
+    "shift": {
+      "name": "Finding last year by position",
+      "naive_label": "Rows a shift pairs with the wrong year",
+      "naive_value": "{{ch3.shift_mispaired}}",
+      "honest_label": "Rows a calendar join pairs with the wrong year",
+      "honest_value": "{{ch3.calendar_mispaired}}",
+      "why": "A company that skips a year has no row for it, so the row before is two or more years back."
+    }
+  },
+  "next": {"title": "The Yardstick", "line": "How will we know a model is good?"}
+}
