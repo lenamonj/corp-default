@@ -5,9 +5,8 @@ from itertools import pairwise
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import average_precision_score, roc_auc_score
 
-from corp_default.metrics import capture_rate, company_resamples, within_year_percentile
+from corp_default.metrics import company_resamples, within_year_percentile
 from corp_default.splits import CRISIS_FOLDS, Fold
 
 BUDGETS = (0.01, 0.05, 0.10)
@@ -55,11 +54,45 @@ def _aligned(scores: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
     return aligned
 
 
-def _ranking_metrics(y: np.ndarray, pct: np.ndarray) -> dict[str, float]:
-    values = {"roc_auc": roc_auc_score(y, pct), "ap": average_precision_score(y, pct)}
-    values["accuracy_ratio"] = 2 * values["roc_auc"] - 1
-    table = capture_rate(y, pct, BUDGETS)
-    for budget, capture, lift in zip(BUDGETS, table["capture_rate"], table["lift"]):
+def _levels(pct: np.ndarray) -> np.ndarray:
+    """Each score's rank among the distinct scores, 0 for the lowest. Equal scores share a level."""
+    return np.unique(pct, return_inverse=True)[1]
+
+
+def _roc_auc_and_ap(y: np.ndarray, level: np.ndarray) -> tuple[float, float]:
+    """ROC-AUC and average precision from the count of rows at each score level.
+
+    They equal scikit-learn's roc_auc_score and average_precision_score, ties included. Counting
+    needs no sort, which keeps a thousand resamples quick.
+    """
+    rows = np.bincount(level)
+    pos = np.bincount(level, weights=y, minlength=len(rows))
+    neg = rows - pos
+    roc_auc = (pos * (np.cumsum(neg) - neg / 2)).sum() / (pos.sum() * neg.sum())
+    caught = np.cumsum(pos[::-1])  # from the riskiest level down
+    reviewed = np.cumsum(rows[::-1])
+    ap = (pos[::-1] * caught / np.maximum(reviewed, 1)).sum() / pos.sum()
+    return float(roc_auc), float(ap)
+
+
+def _captured(
+    y: np.ndarray, pct: np.ndarray, budgets: tuple[float, ...]
+) -> list[tuple[float, float]]:
+    """Capture rate and lift at each budget: the numbers of metrics.capture_rate without its table."""
+    ranked = y[np.argsort(-pct, kind="mergesort")]
+    total_pos, base_rate = ranked.sum(), y.mean()
+    pairs = []
+    for budget in budgets:
+        k = max(1, round(budget * len(ranked)))
+        caught = ranked[:k].sum()
+        pairs.append((caught / total_pos, (caught / k) / base_rate))
+    return pairs
+
+
+def _ranking_metrics(y: np.ndarray, pct: np.ndarray, level: np.ndarray) -> dict[str, float]:
+    roc_auc, ap = _roc_auc_and_ap(y, level)
+    values = {"roc_auc": roc_auc, "ap": ap, "accuracy_ratio": 2 * roc_auc - 1}
+    for budget, (capture, lift) in zip(BUDGETS, _captured(y, pct, BUDGETS)):
         values[f"capture_{round(budget * 100)}"] = capture
         values[f"lift_{round(budget * 100)}"] = lift
     return values
@@ -82,29 +115,30 @@ def _with_intervals(point: dict, draws: list[dict], n_boot: int) -> dict:
 def scoreboard(scores: dict[str, pd.DataFrame], n_boot: int = 1000) -> pd.DataFrame:
     """One row per model on identical rows, every metric on `pct` with its cluster-bootstrap interval.
 
-    Each company resample is drawn once and every metric is computed on it, in the same draw
-    order as metrics.cluster_bootstrap_ci, so the intervals equal what that function gives.
+    Each company resample is drawn once and every model and metric is computed on it, in the draw
+    order of metrics.cluster_bootstrap_ci, so the intervals equal what that function gives.
     """
-    rows = []
-    for name, oof in _aligned(scores).items():
-        y, pct = oof["target"].to_numpy(), oof["pct"].to_numpy()
-        point = _ranking_metrics(y, pct)
-        draws = [
-            _ranking_metrics(y[idx], pct[idx])
-            for idx in company_resamples(y, oof["company_name"], n_boot, SEED)
-        ]
-        rows.append(
+    aligned = _aligned(scores)
+    first = next(iter(aligned.values()))
+    y = first["target"].to_numpy()
+    ranked = {name: oof["pct"].to_numpy() for name, oof in aligned.items()}
+    levels = {name: _levels(pct) for name, pct in ranked.items()}
+    draws = {name: [] for name in ranked}
+    for idx in company_resamples(y, first["company_name"], n_boot, SEED):
+        for name, pct in ranked.items():
+            draws[name].append(_ranking_metrics(y[idx], pct[idx], levels[name][idx]))
+    return pd.DataFrame(
+        [
             {"model": name, "rows": len(y), "positives": int(y.sum())}
-            | _with_intervals(point, draws, n_boot)
-        )
-    return pd.DataFrame(rows)
+            | _with_intervals(_ranking_metrics(y, pct, levels[name]), draws[name], n_boot)
+            for name, pct in ranked.items()
+        ]
+    )
 
 
-def _differences(y: np.ndarray, a: np.ndarray, b: np.ndarray) -> dict[str, float]:
-    return {
-        "roc_auc_diff": roc_auc_score(y, a) - roc_auc_score(y, b),
-        "ap_diff": average_precision_score(y, a) - average_precision_score(y, b),
-    }
+def _differences(a: tuple[float, float], b: tuple[float, float]) -> dict[str, float]:
+    """ROC-AUC and average precision of one model less those of another."""
+    return {"roc_auc_diff": a[0] - b[0], "ap_diff": a[1] - b[1]}
 
 
 def paired_table(
@@ -112,24 +146,29 @@ def paired_table(
 ) -> pd.DataFrame:
     """Each rung of the ladder against the rung before it, on the same company resamples."""
     aligned = _aligned({name: scores[name] for name in ladder})
-    rows = []
-    for before, rung in pairwise(ladder):
-        y = aligned[rung]["target"].to_numpy()
-        a, b = aligned[rung]["pct"].to_numpy(), aligned[before]["pct"].to_numpy()
-        point = _differences(y, a, b)
-        groups = aligned[rung]["company_name"]
-        draws = [
-            _differences(y[idx], a[idx], b[idx])
-            for idx in company_resamples(y, groups, n_boot, SEED)
+    first = aligned[ladder[0]]
+    y = first["target"].to_numpy()
+    levels = {name: _levels(oof["pct"].to_numpy()) for name, oof in aligned.items()}
+    steps = list(pairwise(ladder))
+    draws = {step: [] for step in steps}
+    for idx in company_resamples(y, first["company_name"], n_boot, SEED):
+        drawn = {name: _roc_auc_and_ap(y[idx], level[idx]) for name, level in levels.items()}
+        for before, rung in steps:
+            draws[before, rung].append(_differences(drawn[rung], drawn[before]))
+    point = {name: _roc_auc_and_ap(y, level) for name, level in levels.items()}
+    return pd.DataFrame(
+        [
+            {"model": rung, "against": before}
+            | _with_intervals(_differences(point[rung], point[before]), draws[before, rung], n_boot)
+            for before, rung in steps
         ]
-        rows.append({"model": rung, "against": before} | _with_intervals(point, draws, n_boot))
-    return pd.DataFrame(rows)
+    )
 
 
-def _fold_metrics(y: np.ndarray, pct: np.ndarray) -> dict[str, float]:
+def _fold_metrics(y: np.ndarray, pct: np.ndarray, level: np.ndarray) -> dict[str, float]:
     return {
-        "roc_auc": roc_auc_score(y, pct),
-        "capture_5": capture_rate(y, pct, (0.05,))["capture_rate"].iloc[0],
+        "roc_auc": _roc_auc_and_ap(y, level)[0],
+        "capture_5": _captured(y, pct, (0.05,))[0][0],
     }
 
 
@@ -147,12 +186,13 @@ def fold_table(oof: pd.DataFrame, n_boot: int = 1000) -> pd.DataFrame:
     for label, is_crisis, mask in parts:
         part = oof.loc[mask]
         y, pct = part["target"].to_numpy(), part["pct"].to_numpy()
+        level = _levels(pct)
         draws = [
-            _fold_metrics(y[idx], pct[idx])
+            _fold_metrics(y[idx], pct[idx], level[idx])
             for idx in company_resamples(y, part["company_name"], n_boot, SEED)
         ]
         rows.append(
             {"fold": label, "crisis": is_crisis, "rows": len(y), "positives": int(y.sum())}
-            | _with_intervals(_fold_metrics(y, pct), draws, n_boot)
+            | _with_intervals(_fold_metrics(y, pct, level), draws, n_boot)
         )
     return pd.DataFrame(rows)

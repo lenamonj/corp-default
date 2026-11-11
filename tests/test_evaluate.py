@@ -1,10 +1,19 @@
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import average_precision_score, roc_auc_score
 
-from corp_default.evaluate import fold_table, paired_table, scoreboard, walk_forward_oof
-from corp_default.metrics import cluster_bootstrap_ci
+from corp_default.evaluate import (
+    BUDGETS,
+    _captured,
+    _levels,
+    _roc_auc_and_ap,
+    fold_table,
+    paired_table,
+    scoreboard,
+    walk_forward_oof,
+)
+from corp_default.metrics import capture_rate, cluster_bootstrap_ci, paired_bootstrap_diff_ci
 from corp_default.splits import CRISIS_FOLDS, HORIZON, walk_forward_folds
 
 
@@ -20,12 +29,46 @@ def panel() -> pd.DataFrame:
     return frame
 
 
+@pytest.fixture(scope="module")
+def tied() -> tuple[np.ndarray, np.ndarray]:
+    # 4,000 rows on forty score levels, so most rows tie with a hundred others
+    rng = np.random.default_rng(0)
+    return (rng.random(4000) < 0.05).astype(int), rng.integers(0, 40, size=4000) / 40
+
+
+def test_counted_metrics_equal_scikit_learn_when_scores_tie(tied):
+    y, scores = tied
+    roc_auc, ap = _roc_auc_and_ap(y, _levels(scores))
+    assert roc_auc == pytest.approx(roc_auc_score(y, scores), abs=1e-12)
+    assert ap == pytest.approx(average_precision_score(y, scores), abs=1e-12)
+
+
+def test_counted_metrics_equal_scikit_learn_on_a_resample_that_empties_levels(tied):
+    y, scores = tied
+    level = _levels(np.concatenate([scores, [2.0, 3.0]]))[:-2]  # two levels no row holds
+    idx = np.random.default_rng(1).integers(0, len(y), size=len(y))
+    roc_auc, ap = _roc_auc_and_ap(y[idx], level[idx])
+    assert roc_auc == pytest.approx(roc_auc_score(y[idx], scores[idx]), abs=1e-12)
+    assert ap == pytest.approx(average_precision_score(y[idx], scores[idx]), abs=1e-12)
+
+
+def test_captured_gives_the_numbers_of_capture_rate_through_ties(tied):
+    y, scores = tied
+    table = capture_rate(y, scores, BUDGETS)
+    assert _captured(y, scores, BUDGETS) == list(zip(table["capture_rate"], table["lift"]))
+
+
 def by_signal(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
     return valid["signal"].to_numpy()
 
 
 def constant(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
     return np.zeros(len(valid))
+
+
+def by_noisy(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+    # the signal in five grades, so it ties and ranks worse
+    return np.round(valid["signal"].to_numpy())
 
 
 def test_walk_forward_oof_returns_exactly_the_fold_years(panel):
@@ -79,7 +122,27 @@ def test_scoreboard_intervals_equal_the_cluster_bootstrap(panel):
     lo, hi, usable = cluster_bootstrap_ci(
         oof["target"], oof["pct"], oof["company_name"], roc_auc_score, n_boot=50
     )
-    assert (board["roc_auc_lo"], board["roc_auc_hi"], board["usable"]) == (lo, hi, usable)
+    assert (board["roc_auc_lo"], board["roc_auc_hi"]) == pytest.approx((lo, hi), abs=1e-12)
+    assert board["usable"] == usable
+    lo, hi, _ = cluster_bootstrap_ci(
+        oof["target"], oof["pct"], oof["company_name"], average_precision_score, n_boot=50
+    )
+    assert (board["ap_lo"], board["ap_hi"]) == pytest.approx((lo, hi), abs=1e-12)
+
+
+def test_paired_table_intervals_equal_the_paired_bootstrap(panel):
+    folds = walk_forward_folds(panel)
+    signal, noisy = (
+        walk_forward_oof(by_signal, panel, folds),
+        walk_forward_oof(by_noisy, panel, folds),
+    )
+    row = paired_table({"noisy": noisy, "signal": signal}, ["noisy", "signal"], n_boot=50).iloc[0]
+    for key, metric in {"roc_auc_diff": roc_auc_score, "ap_diff": average_precision_score}.items():
+        lo, hi, usable = paired_bootstrap_diff_ci(
+            signal["target"], signal["pct"], noisy["pct"], signal["company_name"], metric, n_boot=50
+        )
+        assert (row[f"{key}_lo"], row[f"{key}_hi"]) == pytest.approx((lo, hi), abs=1e-12)
+        assert row["usable"] == usable
 
 
 def test_scoreboard_refuses_models_scored_on_different_rows(panel):
@@ -119,5 +182,6 @@ def test_fold_table_gives_each_fold_and_the_crisis_and_calm_pools(panel):
         crisis["target"], crisis["pct"], crisis["company_name"], roc_auc_score, n_boot=50
     )
     row = table.loc["crisis folds"]
-    assert (row["roc_auc_lo"], row["roc_auc_hi"], row["usable"]) == (lo, hi, usable)
+    assert (row["roc_auc_lo"], row["roc_auc_hi"]) == pytest.approx((lo, hi), abs=1e-12)
+    assert row["usable"] == usable
     assert {"capture_5", "capture_5_lo", "capture_5_hi"} <= set(table.columns)
