@@ -1,0 +1,21 @@
+{
+  "number": 0,
+  "title": "The Fixture",
+  "question": "Does the build carry every part across?",
+  "goals": [
+    "Open the store and set the style.",
+    "Carry a number into the prose.",
+    "Draw two exhibits and a plate."
+  ],
+  "pitfalls": {
+    "skew": {
+      "name": "The mean of a skewed sample",
+      "naive_label": "Mean",
+      "naive_value": "{{ch0.mean:.1f}}",
+      "honest_label": "Median",
+      "honest_value": "{{ch0.median:.1f}}",
+      "why": "One large value drags the mean far from the typical one."
+    }
+  },
+  "next": {"title": "The Panel", "line": "What exactly is in this file?"}
+}

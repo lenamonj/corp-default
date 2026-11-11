@@ -53,4 +53,6 @@ line-length = 100
 extend-exclude = ["notebooks", "corp_default.ipynb"]
 
 [tool.ruff.lint.per-file-ignores]
-"chapters/*.py" = ["E402"]
+# A chapter is a notebook: imports follow prose, and a cell ends on the value it shows.
+"chapters/*.py" = ["E402", "B018"]
+"tests/fixtures/*.py" = ["E402", "B018"]

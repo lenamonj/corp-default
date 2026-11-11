@@ -5,6 +5,8 @@ import warnings
 
 import matplotlib as mpl
 from cycler import cycler
+from IPython import get_ipython
+from IPython.core.pylabtools import print_figure
 from matplotlib import font_manager
 from matplotlib.figure import Figure
 
@@ -61,10 +63,25 @@ def _register(files: list) -> None:
             ]
 
 
+def notebook_png(fig: Figure) -> tuple[str, dict]:
+    """A figure as a notebook shows it: the whole canvas, with the exhibit's label as alt text.
+
+    Jupyter's default crops each figure to its ink (bbox_inches="tight"), which would change an
+    exhibit's width from one chart to the next.
+    """
+    return print_figure(fig, "png", bbox_inches=None, base64=True), {"alt": fig.get_label()}
+
+
 def use_house_style() -> None:
     """Set the house style, register the fonts, and start exhibit numbering again at 1."""
     global _count, _fonts
     _count = 0
+    shell = get_ipython()
+    if shell is not None:
+        # The inline backend installs its own PNG formatter when it loads; ours must follow it.
+        import matplotlib_inline.backend_inline  # noqa: F401
+
+        shell.display_formatter.formatters["image/png"].for_type(Figure, notebook_png)
     files = sorted(FONTS.glob("*/*.ttf"))
     if files:
         _register(files)
@@ -118,6 +135,7 @@ def exhibit(
     notice, and a source line at the foot. save_as also writes assets/readme/gallery/<name>.png."""
     global _count
     _count += 1
+    fig.set_label(f"Exhibit {_count}: {title}. {note}")
     # Let a constrained layout set the margins around tick labels, freeze it, then grow the figure
     # and move every axes down into the new room.
     if fig.get_layout_engine() is None:

@@ -85,3 +85,26 @@ def test_the_model_palette_passes_the_checks_on_the_sheet():
     assert failures(hues, SHEET) == []
     for neutral in ("classic", "blend"):
         assert contrast(viz.MODEL_COLORS[neutral], SHEET) >= 3.0
+
+
+def test_an_exhibit_carries_its_number_title_and_note_as_its_label():
+    viz.use_house_style()
+    fig = plt.figure()
+    fig.add_subplot().plot([0, 1])
+    viz.exhibit(fig, "Leverage climbs", "Watch the last three years.")
+    assert fig.get_label() == "Exhibit 1: Leverage climbs. Watch the last three years."
+
+
+def test_a_notebook_shows_the_whole_exhibit_with_its_label_as_alt_text():
+    import base64
+    import io
+
+    from PIL import Image
+
+    viz.use_house_style()
+    fig = plt.figure(figsize=(viz.EXHIBIT_WIDTH_IN, 3))
+    fig.add_subplot().plot([0, 1])
+    viz.exhibit(fig, "Narrow content", "A tight crop would trim the margins.")
+    data, metadata = viz.notebook_png(fig)
+    assert Image.open(io.BytesIO(base64.b64decode(data))).width == 1200
+    assert metadata == {"alt": "Exhibit 1: Narrow content. A tight crop would trim the margins."}

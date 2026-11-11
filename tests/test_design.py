@@ -204,3 +204,28 @@ def test_carbon_components_carry_a_carbon_rule_edge_for_dark_pages():
     for selector in (".cb-cover", ".cb-next"):
         rule = re.search(re.escape(selector) + r" \{([^}]*)\}", css).group(1)
         assert "border: 1px solid var(--carbon-rule)" in rule, selector
+
+
+def test_house_mark_is_the_share_not_yet_failed_on_a_labelled_truncated_axis(toy_mark):
+    # Four companies: failed at 1, left at 2, failed at 3, still reporting at 4. The cumulative
+    # incidence of failure is 1/4 at year 1 and 1/4 + (1/2)(1/2) = 1/2 at year 3.
+    times = [t for t, _ in toy_mark["points"]]
+    shares = [s for _, s in toy_mark["points"]]
+    assert times == [0, 1, 2, 3, 4]
+    assert shares == pytest.approx([1.0, 0.75, 0.75, 0.5, 0.5])
+    assert toy_mark["y_range"] == (0.5, 1.0)
+    assert toy_mark["labels"] == ((1.0, "1.00"), (0.5, "0.50"))
+
+
+def test_mark_curve_marks_the_chapter_from_the_first_to_the_last(toy_mark):
+    import re
+
+    from tools.casebook.components import mark_curve
+
+    def here(chapter):
+        found = re.search(r'<circle class="cb-here" cx="([^"]+)"', mark_curve(toy_mark, chapter))
+        return found and float(found.group(1))
+
+    assert here(1) == 96 and here(7) == 1136
+    assert here(4) == pytest.approx((96 + 1136) / 2)
+    assert here(None) is None

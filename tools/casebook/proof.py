@@ -25,8 +25,17 @@ from corp_default.features import FAMILIES, add_ratios
 from corp_default.labels import build_label, event_table
 from corp_default.metrics import wilson_interval
 from corp_default.splits import DEV_END, development
-from corp_default.survival import cumulative_incidence, kaplan_meier
-from tools.casebook.components import cover, next_card, opener, pitfall, route, step_curve
+from corp_default.survival import kaplan_meier
+from tools.casebook.components import (
+    cover,
+    house_mark,
+    mark_curve,
+    next_card,
+    opener,
+    pitfall,
+    route,
+    step_curve,
+)
 from tools.casebook.studio import LANDING_WIDTH, Studio
 
 OUT = REPO / "artifacts" / "proof"
@@ -57,30 +66,26 @@ SPEC_PALETTE = {
 
 
 def house_marks(events: pd.DataFrame) -> dict[str, dict]:
-    """The two candidate house marks, as step-curve arguments, computed from the event table.
+    """The two candidate house marks of Check Stop 3, as step-curve arguments.
 
-    A, chosen at Check Stop 3, is the share not yet failed: one minus the cumulative incidence of
-    failure, with other exits as a competing risk. B, kept for the record, is the share still filing.
+    A, the one chosen, is components.house_mark. B, kept for the record, is the share still filing.
     """
-    incidence = cumulative_incidence(events["duration"], events["event"])
-    not_failed = 1 - incidence["cif_failed"]
     any_exit = kaplan_meier(events["duration"], (events["event"] != "reporting").astype(int))
-    a_points = [(0, 1.0), *zip(incidence["time"], not_failed)]
-    b_points = [(0, 1.0), *zip(any_exit["time"], any_exit["survival"])]
-    low = float(np.floor(not_failed.min() * 20) / 20)
     failed_only = kaplan_meier(events["duration"], (events["event"] == "failed").astype(int))
-    failure_times = failed_only.loc[failed_only["events"] > 0, "time"].tolist()
     return {
-        "A": {
-            "points": a_points,
-            "y_range": (low, 1.0),
-            "labels": ((1.0, "1.00"), (low, f"{low:.2f}")),
+        "A": house_mark(events),
+        "B": {
+            "points": [(0, 1.0), *zip(any_exit["time"], any_exit["survival"])],
+            "y_range": (0.0, 1.0),
+            "ticks": failed_only.loc[failed_only["events"] > 0, "time"].tolist(),
         },
-        "B": {"points": b_points, "y_range": (0.0, 1.0), "ticks": failure_times},
     }
 
 
 def mark_svg(mark: dict, chapter: int | None, width: int = 1200, height: int = 160) -> str:
+    """Either candidate as a picture; B alone carries ticks, so it is drawn here."""
+    if "ticks" not in mark:
+        return mark_curve(mark, chapter, width, height)
     times = [t for t, _ in mark["points"]]
     marker = None if chapter is None else times[0] + (times[-1] - times[0]) * (chapter - 1) / 6
     return step_curve(
@@ -89,9 +94,8 @@ def mark_svg(mark: dict, chapter: int | None, width: int = 1200, height: int = 1
         height,
         (96, 18, width - 64, height - 22),
         marker=marker,
-        ticks=mark.get("ticks"),
+        ticks=mark["ticks"],
         y_range=mark["y_range"],
-        labels=mark.get("labels", ()),
     )
 
 

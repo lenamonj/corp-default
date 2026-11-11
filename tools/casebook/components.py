@@ -6,12 +6,17 @@ studio's fit check refuses any that do not fit.
 """
 
 import itertools
+import math
 from html import escape
 
+import pandas as pd
+
+from corp_default.survival import cumulative_incidence
 from tools.casebook.studio import WIDTH
 
 AUTHOR = "Jeff Lenamon"
 SERIES = "Corporate Default Prediction"
+CHAPTERS = 7
 OPENER_WORDS = 8  # an opener's goal is one short line
 TIMEBAR_KINDS = ("train", "embargo", "valid", "holdout", "label")
 
@@ -77,8 +82,44 @@ def step_curve(
     )
 
 
+def house_mark(events: pd.DataFrame) -> dict:
+    """The house mark, as step-curve arguments computed from the event table.
+
+    It is the share of companies not yet failed: one minus the cumulative incidence of failure,
+    with other exits as a competing risk, on an axis truncated to the nearest 0.05 below the curve
+    and labelled at both ends.
+    """
+    incidence = cumulative_incidence(events["duration"], events["event"])
+    not_failed = 1 - incidence["cif_failed"]
+    low = math.floor(float(not_failed.min()) * 20) / 20
+    return {
+        "points": [(0, 1.0), *zip(incidence["time"].tolist(), not_failed.tolist())],
+        "y_range": (low, 1.0),
+        "labels": ((1.0, "1.00"), (low, f"{low:.2f}")),
+    }
+
+
+def mark_curve(
+    mark: dict, chapter: int | None = None, width: int = WIDTH, height: int = 160
+) -> str:
+    """The house mark as a picture, with a chapter's place marked from first to last along it."""
+    times = [t for t, _ in mark["points"]]
+    marker = None
+    if chapter is not None:
+        marker = times[0] + (times[-1] - times[0]) * (chapter - 1) / (CHAPTERS - 1)
+    return step_curve(
+        mark["points"],
+        width,
+        height,
+        (96, 18, width - 64, height - 22),
+        marker=marker,
+        y_range=mark["y_range"],
+        labels=mark["labels"],
+    )
+
+
 def cover(
-    number: int, title: str, question: str, minutes: int, curve: str, chapters: int = 7
+    number: int, title: str, question: str, minutes: int, curve: str, chapters: int = CHAPTERS
 ) -> str:
     """A chapter's first picture: its numeral, title, question, and its place on the house mark."""
     return (
