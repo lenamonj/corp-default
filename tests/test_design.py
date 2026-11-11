@@ -187,7 +187,7 @@ def test_next_card_draws(studio, tmp_path):
 def test_step_curve_only_moves_right_and_down_for_a_survival_input():
     import re
 
-    path = re.search(r'<path class="step" d="([^"]+)"', _curve()).group(1)
+    path = re.search(r'<path class="cb-step" d="([^"]+)"', _curve()).group(1)
     numbers = [float(n) for n in re.findall(r"-?\d+(?:\.\d+)?", path)]
     xs, ys = numbers[0::2], numbers[1::2]
     assert all(b >= a for a, b in itertools.pairwise(xs))

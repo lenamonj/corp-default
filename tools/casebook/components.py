@@ -16,6 +16,11 @@ OPENER_WORDS = 8  # an opener's goal is one short line
 TIMEBAR_KINDS = ("train", "embargo", "valid", "holdout", "label")
 
 
+def _cls(names: str) -> str:
+    """Class names in the casebook namespace: every word gets the cb- prefix."""
+    return " ".join(f"cb-{name}" for name in names.split())
+
+
 def step_curve(
     points: list[tuple[float, float]],
     width: int,
@@ -50,24 +55,24 @@ def step_curve(
     path = f"M{x_of(times[0]):.1f} {y_of(points[0][1]):.1f}"
     for (_, before), (t, s) in itertools.pairwise(points):
         path += f" L{x_of(t):.1f} {y_of(before):.1f} L{x_of(t):.1f} {y_of(s):.1f}"
-    drawn = [f'<line class="axis" x1="{left}" x2="{right}" y1="{bottom}" y2="{bottom}"/>']
+    drawn = [f'<line class="cb-axis" x1="{left}" x2="{right}" y1="{bottom}" y2="{bottom}"/>']
     for value, text in labels:
         drawn.append(
-            f'<text class="label" x="{left - 24}" y="{y_of(value) + 4:.1f}" '
+            f'<text class="cb-label" x="{left - 24}" y="{y_of(value) + 4:.1f}" '
             f'text-anchor="end">{escape(text)}</text>'
         )
     for t in ticks or []:
         x = x_of(t)
         drawn.append(
-            f'<line class="tick" x1="{x:.1f}" x2="{x:.1f}" y1="{bottom}" y2="{bottom - 10}"/>'
+            f'<line class="cb-tick" x1="{x:.1f}" x2="{x:.1f}" y1="{bottom}" y2="{bottom - 10}"/>'
         )
-    drawn.append(f'<path class="step" d="{path}" style="stroke:{color}"/>')
+    drawn.append(f'<path class="cb-step" d="{path}" style="stroke:{color}"/>')
     if marker is not None:
         x, y = x_of(marker), y_of(survival_at(marker))
-        drawn.append(f'<circle class="halo" cx="{x:.1f}" cy="{y:.1f}" r="12"/>')
-        drawn.append(f'<circle class="here" cx="{x:.1f}" cy="{y:.1f}" r="5"/>')
+        drawn.append(f'<circle class="cb-halo" cx="{x:.1f}" cy="{y:.1f}" r="12"/>')
+        drawn.append(f'<circle class="cb-here" cx="{x:.1f}" cy="{y:.1f}" r="5"/>')
     return (
-        f'<svg class="curve" width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
+        f'<svg class="cb-curve" width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
         f"{''.join(drawn)}</svg>"
     )
 
@@ -77,11 +82,11 @@ def cover(
 ) -> str:
     """A chapter's first picture: its numeral, title, question, and its place on the house mark."""
     return (
-        f'<div class="cb cover"><header><span>{escape(SERIES.upper())}</span>'
+        f'<div class="cb cb-cover"><header><span>{escape(SERIES.upper())}</span>'
         f"<span>CHAPTER {number} OF {chapters}</span></header>"
-        f'<main><div class="numeral">{number:02d}</div><div class="words">'
-        f'<h1>{escape(title)}</h1><p class="question">{escape(question)}</p></div></main>'
-        f'<div class="mark">{curve}</div>'
+        f'<main><div class="cb-numeral">{number:02d}</div><div class="cb-words">'
+        f'<h1>{escape(title)}</h1><p class="cb-question">{escape(question)}</p></div></main>'
+        f'<div class="cb-mark">{curve}</div>'
         f"<footer><span>Created by <b>{escape(AUTHOR)}</b></span>"
         f"<span>ABOUT {minutes} MIN</span></footer></div>"
     )
@@ -105,14 +110,14 @@ def route(parts: list[tuple[str, int]], total: str) -> str:
         x = margin + gap * i
         side = "above" if i % 2 == 0 else "below"
         stops.append(
-            f'<i class="stop" style="left:{x - 5:.1f}px"></i>'
-            f'<div class="part {side}" style="left:{x - label / 2:.1f}px;width:{label:.1f}px">'
-            f'<span class="no">{i + 1:02d}</span><span class="name">{escape(title)}</span>'
-            f'<span class="min">{minutes} MIN</span></div>'
+            f'<i class="cb-stop" style="left:{x - 5:.1f}px"></i>'
+            f'<div class="cb-part {_cls(side)}" style="left:{x - label / 2:.1f}px;width:{label:.1f}px">'
+            f'<span class="cb-no">{i + 1:02d}</span><span class="cb-name">{escape(title)}</span>'
+            f'<span class="cb-min">{minutes} MIN</span></div>'
         )
     return (
-        f'<div class="cb route"><header><span>YOUR ROUTE</span><span>{escape(total)}</span></header>'
-        f'<div class="rail" style="left:{margin:.1f}px;width:{gap * (len(parts) - 1):.1f}px"></div>'
+        f'<div class="cb cb-route"><header><span>YOUR ROUTE</span><span>{escape(total)}</span></header>'
+        f'<div class="cb-rail" style="left:{margin:.1f}px;width:{gap * (len(parts) - 1):.1f}px"></div>'
         f"{''.join(stops)}</div>"
     )
 
@@ -124,14 +129,14 @@ def opener(index: int, count: int, goal: str, minutes: int) -> str:
             f"opener goal has {len(goal.split())} words; keep it to eight words: {goal!r}"
         )
     marks = "".join(
-        f'<i class="{"done" if i < index else "now" if i == index else ""}"></i>'
+        f'<i class="{_cls("done" if i < index else "now" if i == index else "")}"></i>'
         for i in range(1, count + 1)
     )
     return (
-        f'<div class="cb opener"><span class="bar"></span>'
-        f'<span class="part">PART {index:02d} / {count:02d}</span>'
-        f'<span class="goal">{escape(goal)}</span><span class="ticks">{marks}</span>'
-        f'<span class="time">ABOUT {minutes} MIN</span></div>'
+        f'<div class="cb cb-opener"><span class="cb-bar"></span>'
+        f'<span class="cb-part">PART {index:02d} / {count:02d}</span>'
+        f'<span class="cb-goal">{escape(goal)}</span><span class="cb-ticks">{marks}</span>'
+        f'<span class="cb-time">ABOUT {minutes} MIN</span></div>'
     )
 
 
@@ -140,29 +145,29 @@ def pitfall(
 ) -> str:
     """A pitfall plate: the naive number beside the honest number, both computed, and why they differ."""
     return (
-        f'<div class="cb pitfall"><div class="band"><span class="what">PITFALL</span>'
-        f'<span class="name">{escape(name)}</span></div><div class="sides">'
-        f'<div class="side naive"><span class="label">{escape(naive_label)}</span>'
-        f'<span class="value">{escape(naive_value)}</span></div>'
-        f'<div class="side honest"><span class="label">{escape(honest_label)}</span>'
-        f'<span class="value">{escape(honest_value)}</span></div></div>'
-        f'<p class="why">{escape(why)}</p></div>'
+        f'<div class="cb cb-pitfall"><div class="cb-band"><span class="cb-what">PITFALL</span>'
+        f'<span class="cb-name">{escape(name)}</span></div><div class="cb-sides">'
+        f'<div class="cb-side cb-naive"><span class="cb-label">{escape(naive_label)}</span>'
+        f'<span class="cb-value">{escape(naive_value)}</span></div>'
+        f'<div class="cb-side cb-honest"><span class="cb-label">{escape(honest_label)}</span>'
+        f'<span class="cb-value">{escape(honest_value)}</span></div></div>'
+        f'<p class="cb-why">{escape(why)}</p></div>'
     )
 
 
 def stage(width: int, height: int, *parts: str) -> str:
     """A diagram: boxes, words, time bars, and arrows placed by position."""
-    return f'<div class="stage" style="width:{width}px;height:{height}px">{"".join(parts)}</div>'
+    return f'<div class="cb-stage" style="width:{width}px;height:{height}px">{"".join(parts)}</div>'
 
 
 def box(x: int, y: int, w: int, h: int, kind: str = "") -> str:
     """A diagram box. kind: "" (hairline), tint (sheet deep), ink (solid)."""
-    return f'<div class="box {kind}" style="left:{x}px;top:{y}px;width:{w}px;height:{h}px"></div>'
+    return f'<div class="cb-box {_cls(kind)}" style="left:{x}px;top:{y}px;width:{w}px;height:{h}px"></div>'
 
 
 def words(x: int, y: int, w: int, text: str, kind: str = "") -> str:
     """Words in a diagram, centred in a strip w wide. kind: b (bold), m (mono), s (small), left."""
-    return f'<div class="t {kind}" style="left:{x}px;top:{y}px;width:{w}px">{escape(text)}</div>'
+    return f'<div class="cb-t {_cls(kind)}" style="left:{x}px;top:{y}px;width:{w}px">{escape(text)}</div>'
 
 
 def arrows(width: int, height: int, *lines: tuple) -> str:
@@ -172,11 +177,11 @@ def arrows(width: int, height: int, *lines: tuple) -> str:
         x1, y1, x2, y2 = line[:4]
         kind = "dash" if len(line) > 4 else "arrow"
         head = "" if kind == "dash" else ' marker-end="url(#head)"'
-        drawn += f'<line class="{kind}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"{head}/>'
+        drawn += f'<line class="{_cls(kind)}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"{head}/>'
     return (
-        f'<svg class="arrows" width="{width}" height="{height}" viewBox="0 0 {width} {height}"><defs>'
+        f'<svg class="cb-arrows" width="{width}" height="{height}" viewBox="0 0 {width} {height}"><defs>'
         f'<marker id="head" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" '
-        f'orient="auto"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs>{drawn}</svg>'
+        f'orient="auto"><path d="M0 0 L10 5 L0 10 z" class="cb-head"/></marker></defs>{drawn}</svg>'
     )
 
 
@@ -185,7 +190,7 @@ def timebar(x: int, y: int, w: int, h: int, kind: str, label: str = "") -> str:
     if kind not in TIMEBAR_KINDS:
         raise ValueError(f"timebar kind must be one of {TIMEBAR_KINDS}, not {kind!r}")
     return (
-        f'<div class="bar {kind}" style="left:{x}px;top:{y}px;width:{w}px;height:{h}px">'
+        f'<div class="cb-bar {_cls(kind)}" style="left:{x}px;top:{y}px;width:{w}px;height:{h}px">'
         f"<span>{escape(label)}</span></div>"
     )
 
@@ -193,17 +198,17 @@ def timebar(x: int, y: int, w: int, h: int, kind: str, label: str = "") -> str:
 def figure_plate(body: str, caption: str) -> str:
     """The sheet frame a diagram sits in, with its caption at the foot."""
     return (
-        f'<div class="cb plate"><div class="body">{body}</div>'
-        f'<div class="cap">{escape(caption)}</div></div>'
+        f'<div class="cb cb-plate"><div class="cb-body">{body}</div>'
+        f'<div class="cb-cap">{escape(caption)}</div></div>'
     )
 
 
 def next_card(label: str, plate: str, title: str, line: str) -> str:
     """The carbon card that closes a chapter: where to go next."""
     return (
-        f'<div class="cb next"><div class="where"><span class="label">{escape(label)}</span>'
-        f'<span class="plate">{escape(plate)}</span></div><div class="what">'
-        f'<span class="title">{escape(title)}</span><span class="line">{escape(line)}</span></div>'
-        f'<svg class="go" width="56" height="56" viewBox="0 0 56 56">'
+        f'<div class="cb cb-next"><div class="cb-where"><span class="cb-label">{escape(label)}</span>'
+        f'<span class="cb-plate">{escape(plate)}</span></div><div class="cb-what">'
+        f'<span class="cb-title">{escape(title)}</span><span class="cb-line">{escape(line)}</span></div>'
+        f'<svg class="cb-go" width="56" height="56" viewBox="0 0 56 56">'
         f'<path d="M16 28 H38 M30 20 L38 28 L30 36"/></svg></div>'
     )

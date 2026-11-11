@@ -107,11 +107,11 @@ def hero(mark: dict, counts: dict[str, int]) -> str:
         ".hero .facts b{font:700 16px/20px var(--mono);color:var(--on-carbon)}</style>"
     )
     return (
-        f'{style}<div class="cb hero"><div class="kicker">A CASEBOOK IN SEVEN CHAPTERS</div>'
+        f'{style}<div class="cb cb-hero"><div class="cb-kicker">A CASEBOOK IN SEVEN CHAPTERS</div>'
         f"<h1>Corporate Default Prediction</h1>"
         f"<p>A casebook on predicting bankruptcy in US public companies, 1999 to 2018.</p>"
-        f'<div class="mark">{mark_svg(mark, None, width=830, height=170)}</div>'
-        f'<div class="facts">{facts}</div></div>'
+        f'<div class="cb-mark">{mark_svg(mark, None, width=830, height=170)}</div>'
+        f'<div class="cb-facts">{facts}</div></div>'
     )
 
 
@@ -128,13 +128,13 @@ def palette_plate() -> str:
         cells = "".join(
             f'<div style="flex:1;display:flex;flex-direction:column;gap:6px">'
             f'<div style="height:44px;background:{color}"></div>'
-            f'<span class="mono" style="font-size:11px;color:var(--slate)">{name.upper()}</span>'
-            f'<span class="mono" style="font-size:12px;color:var(--ink)">{color}</span></div>'
+            f'<span class="cb-mono" style="font-size:11px;color:var(--slate)">{name.upper()}</span>'
+            f'<span class="cb-mono" style="font-size:12px;color:var(--ink)">{color}</span></div>'
             for name, color in palette.items()
         )
         rows += (
             f'<div style="display:flex;gap:12px;align-items:flex-start;margin-top:20px">'
-            f'<span class="mono" style="flex:none;width:96px;padding-top:14px;font-size:12px;'
+            f'<span class="cb-mono" style="flex:none;width:96px;padding-top:14px;font-size:12px;'
             f'letter-spacing:.14em;color:var(--slate)">{label}</span>{cells}</div>'
         )
     return f'<div class="cb" style="height:280px;padding:28px 40px">{rows}</div>'
