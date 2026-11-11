@@ -105,8 +105,8 @@ html, body { background: transparent; }
 .pitfall .side + .side { border-left: 1px solid var(--rule); }
 .pitfall .label { font: 500 12px/16px var(--mono); letter-spacing: .14em; white-space: nowrap; }
 .pitfall .value { font: 800 64px/72px var(--display); letter-spacing: -.02em; white-space: nowrap; }
-.pitfall .naive .label, .pitfall .naive .value { color: var(--mist); }
-.pitfall .honest .label { color: var(--slate); }
+.pitfall .label { color: var(--slate); }
+.pitfall .naive .value { color: var(--mist); }
 .pitfall .honest .value { color: var(--ink); }
 .pitfall .why { height: 62px; display: flex; align-items: center; padding: 0 40px; border-top: 1px solid var(--rule);
   background: var(--sheet-deep); font: 400 17px/24px var(--sans); color: var(--slate); white-space: nowrap; }

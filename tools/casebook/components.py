@@ -53,7 +53,7 @@ def step_curve(
     drawn = [f'<line class="axis" x1="{left}" x2="{right}" y1="{bottom}" y2="{bottom}"/>']
     for value, text in labels:
         drawn.append(
-            f'<text class="label" x="{left - 10}" y="{y_of(value) + 4:.1f}" '
+            f'<text class="label" x="{left - 24}" y="{y_of(value) + 4:.1f}" '
             f'text-anchor="end">{escape(text)}</text>'
         )
     for t in ticks or []:
@@ -93,7 +93,7 @@ def _route_layout(count: int) -> tuple[float, float, float]:
     for _ in range(3):
         gap = (WIDTH - 2 * margin) / max(count - 1, 1)
         label = min(2 * gap - 16, 240.0)
-        margin = max(100.0, label / 2 + 16)
+        margin = max(100.0, label / 2 + 48)  # inside the header's 48 px margins
     return margin, gap, label
 
 

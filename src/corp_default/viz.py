@@ -1,5 +1,6 @@
 """The chart house style: palettes, fonts, and the exhibit frame every chart in the casebook wears."""
 
+import dataclasses
 import warnings
 
 import matplotlib as mpl
@@ -35,8 +36,29 @@ EXHIBIT_WIDTH_IN = 8.0  # 1200 px at 150 dpi
 DPI = 150
 TOP_IN, FOOT_IN = 0.95, 0.4  # room the exhibit frame adds above and below the axes
 
+# matplotlib reads JetBrains Mono's weights as 436 and 558; register the files at the weights
+# they serve, so asking for normal or bold text finds them without a fallback.
+MONO_WEIGHTS = {"JetBrainsMono-Medium.ttf": 400, "JetBrainsMono-Bold.ttf": 700}
+
 _fonts = {"display": "Archivo", "sans": "Public Sans", "mono": "JetBrains Mono"}
 _count = 0
+
+
+def _register(files: list) -> None:
+    manager = font_manager.fontManager
+    known = {entry.fname for entry in manager.ttflist}
+    for path in files:
+        if str(path) in known:
+            continue
+        manager.addfont(str(path))
+        if path.name in MONO_WEIGHTS:
+            # A file can register under more than one family name; fix the one the charts ask for.
+            manager.ttflist = [
+                dataclasses.replace(entry, weight=MONO_WEIGHTS[path.name])
+                if entry.fname == str(path) and entry.name == "JetBrains Mono"
+                else entry
+                for entry in manager.ttflist
+            ]
 
 
 def use_house_style() -> None:
@@ -45,8 +67,7 @@ def use_house_style() -> None:
     _count = 0
     files = sorted(FONTS.glob("*/*.ttf"))
     if files:
-        for path in files:
-            font_manager.fontManager.addfont(str(path))
+        _register(files)
         _fonts = {"display": "Archivo", "sans": "Public Sans", "mono": "JetBrains Mono"}
     else:
         warnings.warn(
@@ -97,7 +118,10 @@ def exhibit(
     notice, and a source line at the foot. save_as also writes assets/readme/gallery/<name>.png."""
     global _count
     _count += 1
-    # Fix the layout first, then grow the figure and move every axes down into the new room.
+    # Let a constrained layout set the margins around tick labels, freeze it, then grow the figure
+    # and move every axes down into the new room.
+    if fig.get_layout_engine() is None:
+        fig.set_layout_engine("constrained", w_pad=0.15, h_pad=0.1)
     fig.draw_without_rendering()
     fig.set_layout_engine("none")
     old_height = fig.get_figheight()
