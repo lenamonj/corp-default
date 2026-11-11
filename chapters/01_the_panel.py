@@ -3,13 +3,18 @@
 #
 # What the dataset holds, who is in it, and what it cannot tell us, before any model is fitted.
 #
-# > This casebook is educational content created in a personal capacity. Nothing here is investment advice or a recommendation to buy or sell any security. The data is a public research dataset with anonymised company names.
+# > This casebook is educational content created in a personal capacity
+#
+# > Nothing here is investment advice or a recommendation to buy or sell any security
+#
+# > The data is a public research dataset with anonymised company names
 
 # %% [markdown]
 # ## The Question
 #
 # A colleague hands you a file of company accounts and a flag that says which companies went bankrupt.
 # The tempting next step is to fit a model.
+#
 # The right next step is to find out what you are holding.
 # What exactly is in this file?
 
@@ -29,6 +34,7 @@
 #
 # The data file, and nothing else.
 # `uv run python -m tools.get_data` fetches it and checks it.
+#
 # This is the first chapter, so it reads nothing written by another one.
 
 # %% [markdown]
@@ -39,8 +45,52 @@
 #
 # Make sure the kernel `corp-default` is selected before you run a cell.
 # If it is not in the list, or an import fails, the [Quick Start](../README.md#quick-start) shows how to register it and refresh the list.
+
+# %% [markdown]
+# ## The Data Dictionary
 #
-# Q. What does the chapter need before its first question?
+# Each row of the file is a **firm-year**: one company's annual accounts for one fiscal year.
+#
+# The file names its accounting columns `X1` to `X18`.
+# The library gives them the names in the second column.
+#
+# | Column | Name here | What it is |
+# | --- | --- | --- |
+# | `X1` | `current_assets` | Assets expected to turn into cash within a year |
+# | `X2` | `cogs` | Cost of goods sold |
+# | `X3` | `depreciation_amort` | Depreciation and amortization |
+# | `X4` | `ebitda` | Earnings before interest, taxes, depreciation, and amortization |
+# | `X5` | `inventory` | Inventory |
+# | `X6` | `net_income` | Net income, the bottom line |
+# | `X7` | `total_receivables` | Money owed to the company by its customers |
+# | `X8` | `market_cap` | Market value of the company's equity |
+# | `X9` | `net_sales` | Sales, net of returns and discounts |
+# | `X10` | `total_assets` | Total assets |
+# | `X11` | `total_lt_debt` | Long-term debt |
+# | `X12` | `ebit` | Earnings before interest and taxes |
+# | `X13` | `gross_profit` | Gross profit |
+# | `X14` | `total_current_liabilities` | Liabilities due within a year |
+# | `X15` | `retained_earnings` | Profits kept in the business since it began |
+# | `X16` | `total_revenue` | Total revenue |
+# | `X17` | `total_liabilities` | Total liabilities |
+# | `X18` | `total_operating_expenses` | Total operating expenses |
+#
+# The other columns say which row this is.
+#
+# | Column | What it is |
+# | --- | --- |
+# | `company_name` | The company's code, such as `C_1`, in place of its name |
+# | `year` | The fiscal year of the accounts |
+# | `status_label` | `alive` or `failed` |
+#
+# A second file adds each company's industry.
+#
+# | Column | What it is |
+# | --- | --- |
+# | `division` | The **SIC division**, a letter from A to J |
+# | `major_group` | The **major group**, a two-digit code inside the division |
+#
+# Q. What does the chapter need before it can look at the file?
 
 # %%
 import textwrap
@@ -71,7 +121,7 @@ raw = load_raw()
 industry = load_industry()
 
 # %% [markdown]
-# **Reading.** The panel is in memory with readable column names, and the house style is set for every chart.
+# **Reading.** The panel is in memory under the names in the dictionary, and the house style is set for every chart.
 # `store.put` carries a number from a cell into the text, so no number in this chapter is typed by hand.
 #
 # Q. What does the table look like?
@@ -81,7 +131,7 @@ raw.head()
 
 # %% [markdown]
 # **Reading.** Each row is one company in one year.
-# The first columns say which company, what its flag is, and which year, and the rest are lines from that year's accounts.
+# The first columns say which company, what its flag is, and which year, and the rest are that year's accounts.
 #
 # Q. How large is the table, and what does each column hold?
 
@@ -112,6 +162,7 @@ summary.round(1)
 # %% [markdown]
 # **Reading.** In every account the mean is above the median, the `50%` column: for total assets it is {{ch1.assets_mean_to_median:.0f}} times as large.
 # Several minimums are negative, because a line of earnings can be a loss.
+#
 # A few very large companies and a good many losses shape every chart in this chapter.
 #
 # **Next, where the file comes from.**
@@ -121,13 +172,14 @@ summary.round(1)
 #
 # The dataset was published with [Lombardo et al. (2022)](https://doi.org/10.3390/fi14080244), a paper that pairs it with a set of benchmark models.
 # It covers companies listed on the New York Stock Exchange and NASDAQ.
+#
 # A company counts as bankrupt when it files under Chapter 11 or Chapter 7 of the Bankruptcy Code.
+#
 # The copy used here is the one on [Kaggle](https://www.kaggle.com/datasets/utkarshx27/american-companies-bankruptcy-prediction-dataset).
 # `tools.get_data` downloads it and refuses a file whose checksum differs from the one on record.
 #
-# Each row is a **firm-year**: one company's annual accounts for one fiscal year.
 # A set of firm-years that follows the same companies through time is a **panel**.
-# Company names are replaced by codes such as `C_1`.
+#
 # Neither the paper nor the Kaggle page states the units of the accounts.
 # This casebook works in ratios wherever it can, and it never quotes a dollar amount.
 #
@@ -154,6 +206,7 @@ counts.assign(difference=counts["file"] - counts["paper"])
 # %% [markdown]
 # **Reading.** The file holds {{ch1.firm_years:,}} firm-years from {{ch1.companies:,}} companies, for fiscal years {{ch1.first_year}} to {{ch1.last_year}}.
 # The firm-year count matches the paper.
+#
 # The company count does not: the paper states {{ch1.paper_companies:,}}, and the file holds {{ch1.extra_companies}} more.
 # No subset of the file that we tried gives the paper's number, so the difference stays open.
 #
@@ -164,46 +217,18 @@ counts.assign(difference=counts["file"] - counts["paper"])
 #
 # Anything from outside the file.
 # No rating, price history, news, or filing date can be joined to a company.
+#
 # Every feature in this casebook has to be built from the columns of this one file.
 #
 # </details>
 #
-# **Next, the columns one by one.**
+# **Next, the flag and the industry codes.**
 
 # %% [markdown]
-# # The Data Dictionary
+# # The Flag and the Industry Codes
 #
-# The file names its accounting columns `X1` to `X18`.
-# The library renames them on load.
-#
-# | Column | Name here | What it is |
-# | --- | --- | --- |
-# | `X1` | `current_assets` | Assets expected to turn into cash within a year |
-# | `X2` | `cogs` | Cost of goods sold |
-# | `X3` | `depreciation_amort` | Depreciation and amortization |
-# | `X4` | `ebitda` | Earnings before interest, taxes, depreciation, and amortization |
-# | `X5` | `inventory` | Inventory |
-# | `X6` | `net_income` | Net income, the bottom line |
-# | `X7` | `total_receivables` | Money owed to the company by its customers |
-# | `X8` | `market_cap` | Market value of the company's equity |
-# | `X9` | `net_sales` | Sales, net of returns and discounts |
-# | `X10` | `total_assets` | Total assets |
-# | `X11` | `total_lt_debt` | Long-term debt |
-# | `X12` | `ebit` | Earnings before interest and taxes |
-# | `X13` | `gross_profit` | Gross profit |
-# | `X14` | `total_current_liabilities` | Liabilities due within a year |
-# | `X15` | `retained_earnings` | Profits kept in the business since it began |
-# | `X16` | `total_revenue` | Total revenue |
-# | `X17` | `total_liabilities` | Total liabilities |
-# | `X18` | `total_operating_expenses` | Total operating expenses |
-#
-# The other columns say which row this is.
-#
-# | Column | What it is |
-# | --- | --- |
-# | `company_name` | The company's code |
-# | `year` | The fiscal year of the accounts |
-# | `status_label` | `alive` or `failed` |
+# The dictionary gives `status_label` one line.
+# Everything this casebook predicts is built from it, so it earns a closer look.
 #
 # Q. Does `status_label` describe a year or a company?
 
@@ -218,16 +243,16 @@ print("most labels any one company carries:", labels_per_company.max())
 raw["status_label"].value_counts()
 
 # %% [markdown]
-# **Reading.** No company carries more than one label.
-# The flag marks a company, in every one of its rows, and says nothing about the year.
+# **Reading.** No company carries more than one label, so the flag marks a company and says nothing about the year.
 # The {{ch1.failed_rows:,}} `failed` rows belong to {{ch1.failed_companies}} companies.
+#
 # Chapter 2 turns the flag into an event with a date.
 #
 # The Kaggle file has no industry.
 # A later copy of the dataset from the same authors adds industry codes for the same companies.
-# The first is the **SIC division**, a letter from A to J in the [Standard Industrial Classification](https://www.osha.gov/data/sic-manual).
-# The second is the **major group**, a two-digit code inside the division.
-# `tools.get_data` keeps those codes from that copy and nothing else.
+#
+# The codes come from the [Standard Industrial Classification](https://www.osha.gov/data/sic-manual), or SIC.
+# `tools.get_data` keeps the division and the major group from that copy and nothing else.
 #
 # Q. How does the library load the two files?
 #
@@ -264,8 +289,7 @@ def load_industry(path: Path = INDUSTRY_PATH, data_path: Path = DATA_PATH) -> pd
 
 
 # %% [markdown]
-# **Reading.** `load_raw` renames the columns and drops `total_revenue`.
-# A later part shows why: it is a copy of `net_sales`.
+# **Reading.** `load_raw` renames the columns and drops `total_revenue`, which a later part shows to be a copy of `net_sales`.
 # `load_industry` refuses the codes unless every company in the panel has exactly one.
 #
 # Q. Which industries are in the panel?
@@ -303,8 +327,7 @@ by_division
 
 # %% [markdown]
 # **Reading.** Manufacturing is {{ch1.manufacturing_share:.0%}} of the companies and services another {{ch1.services_share:.0%}}.
-# Finance, insurance, and real estate come to only {{ch1.finance_share:.0%}}.
-# The divisions break into {{ch1.major_groups}} major groups.
+# Finance, insurance, and real estate come to only {{ch1.finance_share:.0%}}, and the divisions break into {{ch1.major_groups}} major groups.
 #
 # **Next, the panel through time.**
 
@@ -345,12 +368,14 @@ viz.exhibit(
 # %% [markdown]
 # **Reading.** Exhibit 1 falls in almost every year.
 # By {{ch1.last_year}} there are {{ch1.companies_last_year:,}} companies, {{ch1.shrink:.0%}} fewer than at the start.
+#
 # A falling count means more companies leave than join.
 #
 # Q. Who joins, who leaves, and how do they leave?
 #
 # `event_table` gives one row per company: its first and last year in the file, and how its history ends.
 # A company is `failed` if it carries the flag, `reporting` if it is still filing in the last year, and `left` otherwise.
+#
 # Chapter 2 builds that table step by step.
 
 # %%
@@ -396,8 +421,10 @@ viz.exhibit(
 # %% [markdown]
 # **Reading.** Exhibit 2 counts {{ch1.entered_later:,}} companies that join after {{ch1.first_year}} and {{ch1.left:,}} that leave without failing.
 # Failure is the rare way out: {{ch1.failed_share_of_exits:.0%}} of all exits.
+#
 # The file does not say why the others leave.
 # A merger, a buyout, and a delisting all look the same here.
+#
 # Only {{ch1.reporting:,}} companies are still filing in {{ch1.last_year}}.
 #
 # Q. What does one company's history look like?
@@ -441,9 +468,7 @@ viz.exhibit(
 )
 
 # %% [markdown]
-# **Reading.** Exhibit 3 shows what the counts hide.
-# Most lines begin at the left edge, in {{ch1.first_year}}.
-# Most end with a grey dot long before the right edge.
+# **Reading.** Most lines in Exhibit 3 begin at the left edge, in {{ch1.first_year}}, and most end with a grey dot long before the right edge.
 # A few lines have a break in them, where a company skips a year or more.
 #
 # **Next, those late arrivals, short histories, and breaks, measured.**
@@ -453,6 +478,7 @@ viz.exhibit(
 #
 # A company first seen in {{ch1.first_year}} did not start in {{ch1.first_year}}.
 # The file starts there.
+#
 # Its earlier years are cut off, and this is called **left truncation**.
 #
 # **Predict 2.** The file spans {{ch1.n_years}} years.
@@ -491,9 +517,9 @@ store.put("longest_gap", spans["n_gap_years"].max())
 spans.drop(columns="failed").describe().loc[["min", "50%", "max"]].T.astype(int)
 
 # %% [markdown]
-# **Reading.** `panel_spans` gives one row per company.
-# {{ch1.first_seen:,}} companies, {{ch1.first_seen_share:.0%}} of all, are already in the file in {{ch1.first_year}}, so their earlier history is unseen.
+# **Reading.** The file already holds {{ch1.first_seen:,}} companies in {{ch1.first_year}}, {{ch1.first_seen_share:.0%}} of all, so their earlier history is unseen.
 # The median company files for {{ch1.median_history:.0f}} years, and {{ch1.one_year}} file once.
+#
 # Only {{ch1.complete:,}} companies, {{ch1.complete_share:.0%}}, are present in all {{ch1.n_years}} years.
 #
 # Q. Do later arrivals last longer?
@@ -528,8 +554,8 @@ viz.exhibit(
 # %% [markdown]
 # **Reading.** Every curve in Exhibit 4 climbs fast: short histories are the rule, whenever a company joins.
 # Half of the companies present in {{ch1.first_year}} file for {{ch1.median_first:.0f}} years or fewer.
-# The later cohorts stop early for a second reason.
-# A company that joins late has only a few years to show before the file ends.
+#
+# The later cohorts stop early for a second reason: a company that joins late has only a few years to show before the file ends.
 # The jump at the right end of the black curve is the companies present throughout.
 #
 # Q. How common are breaks inside a history?
@@ -540,10 +566,10 @@ bands = pd.cut(gap_lengths, [0, 1, 2, 5, 20], labels=["1 year", "2 years", "3 to
 bands.value_counts(sort=False).rename("companies").to_frame()
 
 # %% [markdown]
-# **Reading.** {{ch1.gap_companies}} companies, {{ch1.gap_share:.0%}}, skip at least one year, and the longest break is {{ch1.longest_gap}} years.
+# **Reading.** A break of at least one year shows in {{ch1.gap_companies}} companies, {{ch1.gap_share:.0%}} of all, and the longest is {{ch1.longest_gap}} years.
+#
 # A break matters as soon as a feature compares this year with last year.
-# The row above this year's accounts may be from several years earlier.
-# Chapter 3 joins on the calendar year for that reason.
+# The row above this year's accounts may be from several years earlier, so Chapter 3 joins on the calendar year.
 #
 # **Check.** A company is first seen in {{ch1.first_year}} and leaves some years later. Can you say how long it survived from its listing?
 #
@@ -552,9 +578,9 @@ bands.value_counts(sort=False).rename("companies").to_frame()
 #
 # No.
 # You can say only how long it was observed.
+#
 # It was already listed when the file begins, and its earlier years are cut off.
-# A survival curve that treats the first year in the file as the first year of life is wrong for these companies.
-# Chapter 2 deals with it.
+# A survival curve that treats the first year in the file as the first year of life is wrong for these companies, and Chapter 2 deals with it.
 #
 # </details>
 #
@@ -615,8 +641,10 @@ viz.exhibit(
 
 # %% [markdown]
 # **Reading.** Exhibit 5 is not a picture of large, steady bond issuers.
-# {{ch1.loss_share:.0%}} of all firm-years show a net loss, and no year is below {{ch1.loss_low:.0%}}.
-# {{ch1.no_debt_share:.0%}} have no long-term debt at all, and {{ch1.negative_equity_share:.0%}} owe more than they own.
+# A net loss shows in {{ch1.loss_share:.0%}} of all firm-years, and no year is below {{ch1.loss_low:.0%}}.
+#
+# Long-term debt is absent in {{ch1.no_debt_share:.0%}} of firm-years, and {{ch1.negative_equity_share:.0%}} owe more than they own.
+#
 # The median company of the last year is {{ch1.assets_growth:.1f}} times the size of the median company of the first.
 # They are not the same companies.
 #
@@ -657,9 +685,9 @@ viz.exhibit(
 # %% [markdown]
 # **Reading.** Exhibit 6 puts the bins where the data is: equal steps in the logarithm.
 # The median firm-year has total assets of {{ch1.median_assets:,.0f}} in the file's units, and the middle half lies between {{ch1.assets_q1:,.0f}} and {{ch1.assets_q3:,.0f}}.
+#
 # Leaving out the smallest and the largest hundredth, the firm-years still span {{ch1.assets_span:.1f}} orders of magnitude.
-# A raw amount on that scale says more about size than about health.
-# That is the argument for ratios, and Chapter 3 makes it.
+# A raw amount on that scale says more about size than about health, which is the argument for the ratios of Chapter 3.
 #
 # Q. Does the industry mix move over the years?
 
@@ -692,9 +720,9 @@ viz.exhibit(
 )
 
 # %% [markdown]
-# **Reading.** In Exhibit 7 no division moves far.
-# Manufacturing goes from {{ch1.manufacturing_first:.0%}} of the companies to {{ch1.manufacturing_last:.0%}}.
+# **Reading.** In Exhibit 7 no division moves far: manufacturing goes from {{ch1.manufacturing_first:.0%}} of the companies to {{ch1.manufacturing_last:.0%}}.
 # A model trained on the early years meets much the same industries in the late ones.
+#
 # Whether it meets the same balance sheets is a different question, and Chapter 3 takes it up.
 #
 # **Next, whether the accounts agree with each other.**
@@ -704,6 +732,7 @@ viz.exhibit(
 #
 # Accounts obey arithmetic.
 # Gross profit is sales less the cost of goods sold, whoever reports it.
+#
 # A column that is arithmetic on other columns carries no new information.
 #
 # Q. Which columns can be rebuilt from the others?
@@ -737,8 +766,7 @@ store.put("identity_breaks", int(holds["rows that break it"].sum()))
 holds.assign(**{"share of rows": holds["share of rows"].map("{:.4%}".format)})
 
 # %% [markdown]
-# **Reading.** Each of the {{ch1.identities}} identities holds on at least {{ch1.identity_min:.2%}} of rows, to within rounding.
-# Across all of them only {{ch1.identity_breaks}} rows break one.
+# **Reading.** Each of the {{ch1.identities}} identities holds on at least {{ch1.identity_min:.2%}} of rows, to within rounding, and only {{ch1.identity_breaks}} rows break one.
 # `total_revenue` is `net_sales` under a second name, which is why `load_raw` drops it.
 #
 # **Predict 4.** The file has {{ch1.items}} accounting columns.
@@ -748,6 +776,7 @@ holds.assign(**{"share of rows": holds["share of rows"].map("{:.4%}".format)})
 #
 # Standardise every column, then take the **singular values** of the table.
 # Each one measures how much the data varies along one direction.
+#
 # A direction with no variation at all means some column is a combination of the others.
 
 # %%
@@ -786,9 +815,9 @@ viz.exhibit(
 )
 
 # %% [markdown]
-# **Reading.** Exhibit 8 has a cliff after the first {{ch1.independent}} values.
-# The next one is {{ch1.cliff:,.0f}} times smaller.
+# **Reading.** Exhibit 8 has a cliff after the first {{ch1.independent}} values: the next one is {{ch1.cliff:,.0f}} times smaller.
 # The {{ch1.dependent}} values below the cliff are the {{ch1.identities}} identities, seen from the other side.
+#
 # They are not exactly zero, because the file stores rounded values.
 # That rounding is enough to fool `np.linalg.matrix_rank`, which reports {{ch1.default_rank}} here: it looks for exact dependence and finds only the copy.
 
@@ -823,6 +852,7 @@ oddities.to_frame()
 # %% [markdown]
 # **Reading.** The file has no missing value and no repeated firm-year.
 # It does hold a few rows that look wrong, such as the {{ch1.negative_sales}} with negative net sales.
+#
 # They are {{ch1.odd_rows}} rows in {{ch1.firm_years:,}}.
 # This casebook leaves them in and says so, since dropping rows by hand is a choice a reader could not see.
 #
@@ -833,6 +863,7 @@ oddities.to_frame()
 #
 # It adds no information, and it can do harm.
 # A linear model cannot tell the three apart, so its coefficients on them are arbitrary.
+#
 # A tree model splits its importance across them, which makes each look weaker than it is.
 # The model's input should be the independent items, or ratios built from them.
 #
@@ -845,6 +876,7 @@ oddities.to_frame()
 #
 # Company accounts are skewed: a few giants and many small companies.
 # A log axis is the usual answer.
+#
 # But net income can be negative, and a logarithm cannot take a negative number.
 # A common workaround is to add a constant so that everything is positive, then use a log axis.
 #
@@ -874,17 +906,15 @@ viz.exhibit(
 )
 
 # %% [markdown]
-# **Reading.** Exhibit 9 shows almost nothing.
+# **Reading.** Exhibit 9 shows almost nothing: one bar holds {{ch1.naive_tallest:.0%}} of the firm-years.
 # The shift is as large as the largest loss in the file, so every ordinary profit and loss lands at nearly the same place.
-# One bar holds {{ch1.naive_tallest:.0%}} of the firm-years.
-# The bins are also equal in width before the log is taken, so the first bar alone covers several decades of the axis.
 #
 # Q. What does a scale built for signed numbers show?
 #
 # A **symmetric-log** axis is linear close to zero and logarithmic beyond it, on both sides.
 # `viz.symlog_axis` sets one.
-# The bins follow the same idea: equal steps in the logarithm on each side, and equal steps across the linear stretch at zero.
-# Every bar is then about as wide on the page as its neighbours.
+#
+# The bins follow the same idea, so every bar is about as wide on the page as its neighbours.
 
 # %%
 PER_DECADE = 5  # bars to a decade; the linear stretch from zero to one is as wide as a decade
@@ -914,9 +944,9 @@ viz.exhibit(
 )
 
 # %% [markdown]
-# **Reading.** Exhibit 10 is the same column.
-# Losses sit on the left and profits on the right, each with its own shape, and {{ch1.income_negative:.0%}} of firm-years are losses.
-# The tallest bar now holds {{ch1.honest_tallest:.0%}} of the data.
+# **Reading.** Exhibit 10 is the same column, with losses on the left and profits on the right.
+# Losses are {{ch1.income_negative:.0%}} of firm-years, and the tallest bar now holds {{ch1.honest_tallest:.0%}} of the data.
+#
 # The step on each side of zero is where the axis changes from linear to logarithmic.
 
 # %% [markdown]
@@ -927,6 +957,7 @@ viz.exhibit(
 #
 # A **letter-value plot** is a box plot with more boxes.
 # The widest box holds the middle half of the data.
+#
 # Each narrower box reaches half-way again into what is left of each tail.
 
 
@@ -965,7 +996,8 @@ viz.exhibit(
 
 # %% [markdown]
 # **Reading.** Exhibit 11 reads from the bottom up, by median.
-# {{ch1.signed_items}} of the {{ch1.raw_items}} accounts are negative in more than {{ch1.often:.0%}} of rows: the earnings lines, gross profit, and retained earnings.
+# The earnings lines, gross profit, and retained earnings are negative in more than {{ch1.often:.0%}} of rows: {{ch1.signed_items}} of the {{ch1.raw_items}} accounts.
+#
 # The rest pile up at or above zero, and some, like inventory and long-term debt, are exactly zero for many companies.
 # Every one of them spans several orders of magnitude.
 #
@@ -976,6 +1008,7 @@ viz.exhibit(
 #
 # That folds the number line at zero, so a small loss and a small profit land on the same value.
 # It also sends values near zero toward minus infinity.
+#
 # The symmetric-log scale keeps the order of the numbers and stays finite at zero.
 #
 # </details>
@@ -1009,12 +1042,12 @@ viz.exhibit(
 #
 # 1. The file holds {{ch1.firm_years:,}} firm-years from {{ch1.companies:,}} companies, and the number filing falls by {{ch1.shrink:.0%}} over {{ch1.n_years}} years (Exhibit 1).
 # 2. More companies leave than join, and only {{ch1.failed_share_of_exits:.0%}} of those that leave are failures (Exhibit 2).
-# 3. {{ch1.first_seen_share:.0%}} of the companies are already present in the first year, so their earlier history is cut off (Exhibit 3).
+# 3. Of all the companies, {{ch1.first_seen_share:.0%}} are already present in the first year, so their earlier history is cut off (Exhibit 3).
 # 4. Histories are short: the median is {{ch1.median_history:.0f}} years, and {{ch1.complete_share:.0%}} of companies are present throughout (Exhibit 4).
 # 5. The universe is small and often loss-making: {{ch1.loss_share:.0%}} of firm-years show a net loss and {{ch1.no_debt_share:.0%}} carry no long-term debt (Exhibit 5, Exhibit 6).
 # 6. The industry mix is stable: manufacturing is {{ch1.manufacturing_first:.0%}} of the companies in the first year and {{ch1.manufacturing_last:.0%}} in the last (Exhibit 7).
 # 7. The {{ch1.items}} accounting columns hold {{ch1.independent}} independent items (Exhibit 8).
-# 8. {{ch1.income_negative:.0%}} of firm-years report a loss, and only a signed scale shows them (Exhibit 9, Exhibit 10, Exhibit 11).
+# 8. Losses are {{ch1.income_negative:.0%}} of firm-years, and only a signed scale shows them (Exhibit 9, Exhibit 10, Exhibit 11).
 
 # %% [markdown]
 # # Your Turn

@@ -14,11 +14,14 @@ from pathlib import Path
 import nbformat
 from PIL import Image
 
+# One sentence to a quoted line, each a block of its own.
 DISCLAIMER = (
-    "This casebook is educational content created in a personal capacity. Nothing here is "
-    "investment advice or a recommendation to buy or sell any security. The data is a public "
-    "research dataset with anonymised company names."
+    "This casebook is educational content created in a personal capacity",
+    "Nothing here is investment advice or a recommendation to buy or sell any security",
+    "The data is a public research dataset with anonymised company names",
 )
+MAX_PARAGRAPH = 2  # sentences, written one to a line
+NOT_PROSE = re.compile(r"\||- |#|>|<|!\[|\[!\[|\d+\. ")  # tables, lists, headings, quotes, markup
 PICTURE = re.compile(r"!\[([^\]]*)\]\(data:image/png;base64,([^)]+)\)")
 NEXT_CARD = re.compile(r"\[!\[Next: [^\]]*\]\(data:image/png;base64,[^)]+\)\]\(([^)]+)\)")
 FRONT = ["## The Question", "## What You Will Learn", "## What You Need", "## Your Route"]
@@ -110,8 +113,9 @@ def title_cell(ch: Chapter) -> list[str]:
         faults.append(f"the second cell does not start '# Chapter {ch.number}: Title'")
     if len(lines) < 3 or lines[1].startswith(">"):
         faults.append("the title cell has no one-line purpose under its heading")
-    if f"> {DISCLAIMER}" not in ch.cells[1].source:
-        faults.append("the title cell lacks the disclaimer, as a quoted block")
+    quoted = "\n\n".join(f"> {line}" for line in DISCLAIMER)
+    if quoted not in ch.cells[1].source:
+        faults.append("the title cell lacks the disclaimer, as three quoted lines")
     return faults
 
 
@@ -169,6 +173,26 @@ def kernel_line(ch: Chapter) -> list[str]:
     if len(lines) > 2 and KERNEL in lines[1] and QUICK_START in lines[2]:
         return []
     return ["Setting Up does not open with the kernel line and its link to the Quick Start"]
+
+
+def short_paragraphs(ch: Chapter) -> list[str]:
+    """A paragraph is one or two sentences. Prose is written one sentence to a line, so a
+    paragraph is a run of prose lines with no blank line between them."""
+    faults = []
+    for place, cell in enumerate(ch.cells):
+        if cell.cell_type != "markdown":
+            continue
+        run = []
+        for line in [*cell.source.split("\n"), ""]:
+            if line.strip() and not NOT_PROSE.match(line.strip()):
+                run.append(line)
+                continue
+            if len(run) > MAX_PARAGRAPH:
+                faults.append(
+                    f"cell {place} runs {len(run)} sentences together, starting {run[0][:50]!r}"
+                )
+            run = []
+    return faults
 
 
 def exhibits_numbered(ch: Chapter) -> list[str]:
@@ -301,6 +325,7 @@ RULES = {
         route_drawn,
         parts_and_openers,
         kernel_line,
+        short_paragraphs,
         exhibits_numbered,
         exhibits_cited_exist,
         picture_widths,

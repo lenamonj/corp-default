@@ -86,6 +86,7 @@ BREAKS = {
     "route_drawn": lambda ch: _replace(ch, "**Time.** About", "About"),
     "parts_and_openers": lambda ch: ch.cells.pop(ch.parts()[1] - 1),
     "kernel_line": lambda ch: _replace(ch, "the kernel `corp-default`", "the right kernel"),
+    "short_paragraphs": lambda ch: ch.cells.insert(3, _markdown("One.\nTwo.\nThree.")),
     "exhibits_numbered": _relabel_first_chart,
     "exhibits_cited_exist": lambda ch: _replace(ch, "(Exhibit 2)", "(Exhibit 9)"),
     "picture_widths": _shrink_first_chart,

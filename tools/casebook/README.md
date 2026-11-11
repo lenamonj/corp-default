@@ -4,7 +4,11 @@ What every chapter of the Corporate Default Prediction casebook looks like, and 
 
 The reference is [Chapter 1: The Panel](../../notebooks/01_the_panel.ipynb). When a rule here and that notebook disagree, the notebook is wrong: fix its source and rebuild.
 
-> This casebook is educational content created in a personal capacity. Nothing here is investment advice or a recommendation to buy or sell any security. The data is a public research dataset with anonymised company names.
+> This casebook is educational content created in a personal capacity
+
+> Nothing here is investment advice or a recommendation to buy or sell any security
+
+> The data is a public research dataset with anonymised company names
 
 ## The one rule
 
@@ -49,12 +53,12 @@ A chapter is built in this order. "Drawn" parts come from `components.py` by way
 | Part | Form | Rule |
 | --- | --- | --- |
 | Cover | Drawn: `cover` | First cell. The numeral, the title, the chapter's question, the house mark with this chapter marked, the author, and the minutes. |
-| Title cell | Typed | `# Chapter N: Title`, a one-line purpose, the disclaimer as a quoted block. |
+| Title cell | Typed | `# Chapter N: Title`, a one-line purpose, then the disclaimer as three quoted lines: one sentence to each, a blank line between, no closing full stop. |
 | The Question | Typed | `## The Question`: the situation in a few short lines. `## What You Will Learn`: three to five objectives. `## What You Need`: the chapters and artifacts this one reads. |
 | Route | Typed heading, drawn `route` | Under `## Your Route`: the parts in order on a rail, the minutes under each, then one line of time. |
 | Part opener | Drawn: `opener`, in a cell of its own | Before each `# ` part heading: which part of how many, its goal in one short sentence, about how many minutes. |
 | Part | Typed | At most 12. The first is `# Setting Up`. A part heading starts its cell. |
-| Setting Up | Typed, code | Opens with the kernel line: select `corp-default`, then a link to the README's Quick Start for trouble. It loads the data and shows it plainly before anything is done to it: the first rows with `head()`, the size and column types with `shape` and `info()`, a summary with `describe().T`. No slice or trick comes before the reader has seen the whole table. |
+| Setting Up | Typed, code | Three things, in this order. The kernel line: select `corp-default`, then a link to the README's Quick Start for trouble. The data dictionary, under `## The Data Dictionary`: a typed table of every column the chapter loads that the reader has not met, before any code touches it. Then the load and a plain first look: the first rows with `head()`, the size and column types with `shape` and `info()`, a summary with `describe().T`. No slice or trick comes before the reader has seen the whole table. |
 | Step | Typed, code, typed | A line starting `Q. `, a code cell, then `**Reading.**` and one or two lines on what the output shows. A bold sentence hands off to the next step. |
 | Predict | Typed | `**Predict N.**` asks the reader to commit to a number before a key result. At least two a chapter. |
 | Exhibit | A code cell's output | A chart framed by `viz.exhibit`: an EXHIBIT n tag, a title that states the finding, one line on what to notice, a source line. Numbered from 1 in each chapter. The text refers to it as "Exhibit 4". |
@@ -65,7 +69,7 @@ A chapter is built in this order. "Drawn" parts come from `components.py` by way
 | Your Turn | Typed | `# Your Turn`: three extensions, each with its hint folded under "Hint". |
 | Next | Drawn: `next_card` | The last cell: the card to the next chapter, as a link. Chapter 7 links to the landing page. |
 
-Prose rules: one sentence to a line; bullets only for parallel items under a lead-in; a term is bold where it is first named; no em dashes or en dashes; no emojis; no version history; no number that is not a placeholder.
+Prose rules: a paragraph is one or two sentences, then a blank line, because a reader of a notebook does not follow a long run of sentences; one sentence to a line in the source; bullets only for parallel items under a lead-in; a term is bold where it is first named; no em dashes or en dashes; no emojis; no version history; no number that is not a placeholder.
 
 ## Numbers
 

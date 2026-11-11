@@ -3,9 +3,9 @@
   "title": "The Panel",
   "question": "What exactly is in this file?",
   "goals": [
-    "Load the panel and take a first look.",
+    "Learn the columns, then load and look.",
     "Know who built the file and how.",
-    "Name every column and where it comes from.",
+    "Check the flag and add the industry codes.",
     "See who enters, who leaves, and when.",
     "Measure late arrivals, short histories, and gaps.",
     "Profile the companies by size, losses, and industry.",

@@ -3,7 +3,11 @@
 #
 # A miniature chapter that puts the build through every step.
 #
-# > This casebook is educational content created in a personal capacity. Nothing here is investment advice or a recommendation to buy or sell any security. The data is a public research dataset with anonymised company names.
+# > This casebook is educational content created in a personal capacity
+#
+# > Nothing here is investment advice or a recommendation to buy or sell any security
+#
+# > The data is a public research dataset with anonymised company names
 
 # %% [markdown]
 # ## The Question
