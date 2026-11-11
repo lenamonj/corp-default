@@ -9,6 +9,7 @@ from IPython import get_ipython
 from IPython.core.pylabtools import print_figure
 from matplotlib import font_manager
 from matplotlib.figure import Figure
+from matplotlib.ticker import NullFormatter
 
 from corp_default.data import REPO
 
@@ -181,13 +182,16 @@ def plain_number(value: float, position: int | None = None) -> str:
 
 
 def log_axis(ax, axis: str = "x") -> None:
-    """A log scale whose ticks read as plain numbers."""
+    """A log scale whose ticks read as plain numbers. Minor ticks carry no label: on an axis of
+    under one decade matplotlib would write them as powers of ten."""
     if axis == "x":
         ax.set_xscale("log")
         ax.xaxis.set_major_formatter(plain_number)
+        ax.xaxis.set_minor_formatter(NullFormatter())
     else:
         ax.set_yscale("log")
         ax.yaxis.set_major_formatter(plain_number)
+        ax.yaxis.set_minor_formatter(NullFormatter())
 
 
 def symlog_axis(ax, axis: str = "x", linthresh: float = 1.0) -> None:

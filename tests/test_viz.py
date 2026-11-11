@@ -145,6 +145,17 @@ def test_a_log_axis_shows_plain_numbers_not_powers_of_ten():
     assert not any("10^" in label or "mathdefault" in label for label in labels)
 
 
+def test_a_log_axis_under_one_decade_labels_no_minor_tick_in_powers_of_ten():
+    viz.use_house_style()
+    fig, ax = plt.subplots()
+    ax.plot([0.4, 8], [1, 2])
+    viz.log_axis(ax, "x")
+    fig.canvas.draw()
+    minor = [label.get_text() for label in ax.xaxis.get_minorticklabels()]
+    assert not any(minor)
+    assert "1" in _tick_labels(fig, ax.xaxis)
+
+
 def test_a_log_axis_can_be_the_y_axis():
     viz.use_house_style()
     fig, ax = plt.subplots()
