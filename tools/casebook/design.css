@@ -54,7 +54,7 @@ html, body { background: transparent; }
 .cb-curve .cb-here { fill: var(--steel-bright); }
 
 /* ------------------------------------------------------------------ cover */
-.cb-cover { height: 520px; background: var(--carbon); color: var(--on-carbon); }
+.cb-cover { height: 520px; background: var(--carbon); color: var(--on-carbon); border: 1px solid var(--carbon-rule); }
 .cb-cover header { position: absolute; top: 36px; left: 64px; right: 64px; display: flex; justify-content: space-between;
   font: 500 12px/16px var(--mono); letter-spacing: .18em; color: var(--on-carbon-mute); }
 .cb-cover main { position: absolute; top: 92px; left: 64px; right: 64px; display: flex; align-items: flex-start; }
@@ -62,7 +62,8 @@ html, body { background: transparent; }
 .cb-cover .cb-words { padding-top: 22px; min-width: 0; }
 .cb-cover h1 { font: 800 58px/64px var(--display); letter-spacing: -.01em; color: var(--on-carbon); white-space: nowrap; }
 .cb-cover .cb-question { margin-top: 14px; font: 400 22px/30px var(--sans); color: var(--on-carbon-soft); white-space: nowrap; }
-.cb-cover .cb-mark { position: absolute; left: 0; top: 284px; width: 1200px; height: 160px; }
+.cb-cover .cb-mark { position: absolute; left: 0; right: 0; top: 284px; height: 160px; }
+.cb-cover .cb-mark svg, .cb-hero .cb-mark svg { width: 100%; height: 100%; }
 .cb-cover footer { position: absolute; left: 64px; right: 64px; bottom: 0; height: 60px; display: flex;
   justify-content: space-between; align-items: center; border-top: 1px solid var(--carbon-rule);
   font: 400 14px/20px var(--sans); color: var(--on-carbon-soft); }
@@ -138,7 +139,7 @@ html, body { background: transparent; }
 .cb-stage .cb-bar.cb-label { border: 2px solid var(--signal); color: var(--signal); }
 
 /* ------------------------------------------------------------------ next card */
-.cb-next { height: 140px; display: flex; align-items: center; gap: 40px; padding: 0 64px; background: var(--carbon); color: var(--on-carbon); }
+.cb-next { height: 140px; border: 1px solid var(--carbon-rule); display: flex; align-items: center; gap: 40px; padding: 0 64px; background: var(--carbon); color: var(--on-carbon); }
 .cb-next .cb-where { flex: none; width: 180px; display: flex; flex-direction: column; gap: 6px; }
 .cb-next .cb-label { font: 500 12px/16px var(--mono); letter-spacing: .18em; color: var(--on-carbon-mute); }
 .cb-next .cb-where .cb-plate { padding: 0; border: 0; font: 700 14px/18px var(--mono); letter-spacing: .14em; color: var(--signal-bright); }

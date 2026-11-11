@@ -193,3 +193,14 @@ def test_step_curve_only_moves_right_and_down_for_a_survival_input():
     assert all(b >= a for a, b in itertools.pairwise(xs))
     assert all(b >= a for a, b in itertools.pairwise(ys))  # SVG y grows downward
     assert xs[0] == 64 and xs[-1] == 1136
+
+
+def test_carbon_components_carry_a_carbon_rule_edge_for_dark_pages():
+    import re
+
+    from tools.casebook.studio import CSS
+
+    css = CSS.read_text(encoding="utf-8")
+    for selector in (".cb-cover", ".cb-next"):
+        rule = re.search(re.escape(selector) + r" \{([^}]*)\}", css).group(1)
+        assert "border: 1px solid var(--carbon-rule)" in rule, selector

@@ -93,18 +93,18 @@ def hero(mark: dict, counts: dict[str, int]) -> str:
     """A draft of the landing hero at 830 px. Phase 11 builds the real one."""
     facts = "".join(f"<span><b>{value:,}</b> {name}</span>" for name, value in counts.items())
     style = (
-        "<style>.hero{height:440px;background:var(--carbon);color:var(--on-carbon)}"
-        ".hero .kicker{position:absolute;top:32px;left:40px;font:500 11px/14px var(--mono);"
+        "<style>.cb-hero{height:440px;background:var(--carbon);color:var(--on-carbon);border:1px solid var(--carbon-rule)}"
+        ".cb-hero .cb-kicker{position:absolute;top:32px;left:40px;font:500 11px/14px var(--mono);"
         "letter-spacing:.18em;color:var(--on-carbon-mute)}"
-        ".hero h1{position:absolute;top:60px;left:40px;font:800 46px/52px var(--display);"
+        ".cb-hero h1{position:absolute;top:60px;left:40px;font:800 46px/52px var(--display);"
         "color:var(--on-carbon)}"
-        ".hero p{position:absolute;top:122px;left:40px;width:700px;font:400 18px/26px var(--sans);"
+        ".cb-hero p{position:absolute;top:122px;left:40px;width:700px;font:400 18px/26px var(--sans);"
         "color:var(--on-carbon-soft)}"
-        ".hero .mark{position:absolute;top:186px;left:0;width:830px;height:170px}"
-        ".hero .facts{position:absolute;left:40px;right:40px;bottom:0;height:64px;display:flex;"
+        ".cb-hero .cb-mark{position:absolute;top:186px;left:0;right:0;height:170px}"
+        ".cb-hero .cb-facts{position:absolute;left:40px;right:40px;bottom:0;height:64px;display:flex;"
         "gap:32px;align-items:center;border-top:1px solid var(--carbon-rule);"
         "font:500 12px/16px var(--mono);letter-spacing:.12em;color:var(--on-carbon-mute)}"
-        ".hero .facts b{font:700 16px/20px var(--mono);color:var(--on-carbon)}</style>"
+        ".cb-hero .cb-facts b{font:700 16px/20px var(--mono);color:var(--on-carbon)}</style>"
     )
     return (
         f'{style}<div class="cb cb-hero"><div class="cb-kicker">A CASEBOOK IN SEVEN CHAPTERS</div>'
