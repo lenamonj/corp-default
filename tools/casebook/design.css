@@ -1,0 +1,46 @@
+/* The casebook design system. Tokens first, then one block per drawn component.
+   components.py writes the HTML; README.md says where each component goes. */
+
+@font-face { font-family: "Archivo"; src: url("../../assets/fonts/archivo/Archivo-SemiBold.ttf"); font-weight: 600; }
+@font-face { font-family: "Archivo"; src: url("../../assets/fonts/archivo/Archivo-ExtraBold.ttf"); font-weight: 800; }
+@font-face { font-family: "Public Sans"; src: url("../../assets/fonts/public-sans/PublicSans-Regular.ttf"); font-weight: 400; }
+@font-face { font-family: "Public Sans"; src: url("../../assets/fonts/public-sans/PublicSans-SemiBold.ttf"); font-weight: 600; }
+@font-face { font-family: "JetBrains Mono"; src: url("../../assets/fonts/jetbrains-mono/JetBrainsMono-Medium.ttf"); font-weight: 500; }
+@font-face { font-family: "JetBrains Mono"; src: url("../../assets/fonts/jetbrains-mono/JetBrainsMono-Bold.ttf"); font-weight: 700; }
+
+:root {
+  /* carbon: covers, the hero, the next card */
+  --carbon: #121316;
+  --carbon-rule: #2E3138;
+  --on-carbon: #F2F0EA;
+  --on-carbon-soft: #B9BCC4;
+  --on-carbon-mute: #7E838D;
+  /* sheet: every exhibit and diagram */
+  --sheet: #F7F7F5;
+  --sheet-deep: #ECECE8;
+  --rule: #CFCFC9;
+  --ink: #16181D;
+  --slate: #4F5560;
+  --mist: #8B909A;
+  /* signal is failure and the house mark; steel is survival and place */
+  --signal: #D9482B;
+  --signal-bright: #FF6A4D;
+  --steel: #3F5F7F;
+  --steel-bright: #8FB1D1;
+
+  --display: "Archivo", "Arial Black", sans-serif;
+  --sans: "Public Sans", "Segoe UI", Arial, sans-serif;
+  --mono: "JetBrains Mono", Consolas, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: transparent; }
+
+/* every component is one block as wide as the page it is drawn on, with an opaque background */
+.cb {
+  position: relative; width: 100%; overflow: hidden;
+  background: var(--sheet); color: var(--ink);
+  font-family: var(--sans); font-weight: 400;
+  -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;
+}
+.cb .mono { font-family: var(--mono); font-weight: 500; }
