@@ -72,7 +72,7 @@ def test_the_design_css_carries_the_tokens_and_the_fonts():
     from tools.casebook.studio import CSS
 
     css = CSS.read_text(encoding="utf-8")
-    for token in ("#121316", "#F7F7F5", "#16181D", "#D9482B", "#3F5F7F", "#FF6A4D", "#8FB1D1"):
+    for token in ("#121316", "#F7F7F5", "#16181D", "#D9482B", "#295F92", "#FF6A4D", "#8FB1D1"):
         assert token in css
     for family in ("Archivo", "Public Sans", "JetBrains Mono"):
         assert f'font-family: "{family}"' in css

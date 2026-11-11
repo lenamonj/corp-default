@@ -25,7 +25,7 @@
   /* signal is failure and the house mark; steel is survival and place */
   --signal: #D9482B;
   --signal-bright: #FF6A4D;
-  --steel: #3F5F7F;
+  --steel: #295F92;  /* spec #3F5F7F, chroma raised to 0.10 at the same hue and lightness; Check Stop 3 */
   --steel-bright: #8FB1D1;
 
   --display: "Archivo", "Arial Black", sans-serif;
