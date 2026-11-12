@@ -84,7 +84,9 @@ def save_frame(name: str, frame: pd.DataFrame) -> None:
 
 
 def load_frame(name: str) -> pd.DataFrame:
-    return pd.read_csv(_artifact(name, ".csv"))
+    """A hand-off as it was written. pandas' default parser misses the last digit of many floats,
+    so a chapter that read a table and wrote it again would change it."""
+    return pd.read_csv(_artifact(name, ".csv"), float_precision="round_trip")
 
 
 def save_json(name: str, obj: dict) -> None:

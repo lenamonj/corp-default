@@ -69,6 +69,15 @@ def test_frames_and_json_round_trip(folders):
     assert store.load_json("frozen") == {"logistic": {"C": 0.1}}
 
 
+def test_a_frame_of_long_floats_is_read_back_exactly(folders):
+    # pandas' default parser misses the last digit of many 17-digit floats, so a chapter that
+    # read a hand-off and wrote it again would change it
+    rng = np.random.default_rng(0)
+    scores = rng.normal(size=5000) * 10.0 ** rng.integers(-6, 6, size=5000)
+    store.save_frame("oof_scores", pd.DataFrame({"score": scores}))
+    assert store.load_frame("oof_scores")["score"].tolist() == scores.tolist()
+
+
 def test_write_results_sorts_keys(folders):
     store.write_results({"b": 1, "a": 2}, {"z": "z", "y": "y"})
     text = (folders / "results" / "metrics.json").read_text(encoding="utf-8")
