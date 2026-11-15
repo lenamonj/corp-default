@@ -1302,24 +1302,22 @@ viz.exhibit(
 
 
 # %%
-def folds_and_pools(oof: pd.DataFrame) -> pd.Series:
-    """ROC-AUC of each fold, then of the crisis folds pooled and of the calm folds pooled."""
-    crisis = oof["year"].isin(CRISIS_FOLDS)
-    pools = {
-        "crisis folds": roc_auc_score(oof.loc[crisis, "target"], oof.loc[crisis, "pct"]),
-        "calm folds": roc_auc_score(oof.loc[~crisis, "target"], oof.loc[~crisis, "pct"]),
-    }
-    by_year = auc_by_fold(oof)
-    by_year.index = by_year.index.astype(str)
-    return pd.concat([by_year, pd.Series(pools)])
-
-
-folds_auc = pd.DataFrame({name: folds_and_pools(oof) for name, oof in rungs.items()})
-# The library's table adds intervals. It is run for the top rung only, to keep the chapter quick.
-top_folds = fold_table(rungs["All ratios, logistic"], n_boot=N_BOOT).set_index("fold")
-assert np.allclose(top_folds["roc_auc"], folds_auc["All ratios, logistic"])
+# The library's table gives each fold and each pool its ROC-AUC with a bootstrap interval.
+fold_tables = {
+    name: fold_table(oof, n_boot=N_BOOT).set_index("fold") for name, oof in rungs.items()
+}
+folds_auc = pd.concat(
+    {
+        name: table[["roc_auc", "roc_auc_lo", "roc_auc_hi"]].set_axis(
+            ["ROC-AUC", "low", "high"], axis=1
+        )
+        for name, table in fold_tables.items()
+    },
+    axis=1,
+)
+top_folds = fold_tables["All ratios, logistic"]
 # The reading says the top rung is ahead of Z in every fold. Checked here.
-assert (folds_auc["All ratios, logistic"] > folds_auc["Altman Z"]).all()
+assert (top_folds["roc_auc"] > fold_tables["Altman Z"]["roc_auc"]).all()
 
 store.put("crisis_auc", top_folds.loc["crisis folds", "roc_auc"])
 store.put("crisis_low", top_folds.loc["crisis folds", "roc_auc_lo"])
