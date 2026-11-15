@@ -91,7 +91,7 @@ def hazard_loss(
 def train_net(
     model: nn.Module,
     train: tuple[torch.Tensor, ...],
-    valid: tuple[torch.Tensor, ...],
+    valid: tuple[torch.Tensor, ...] | None,
     *,
     epochs: int,
     lr: float,
@@ -103,10 +103,10 @@ def train_net(
     """Fit `model` with AdamW, stopping when the loss on `valid` has not improved for `patience` epochs.
 
     `train` and `valid` are tuples of tensors: the model's inputs, then targets, then observed.
+    With `valid` None every epoch runs and the last state is the best one.
     The model is left holding its best state. Returns that state, its epoch, and the loss history.
     """
     *inputs, targets, observed = train
-    *valid_inputs, valid_targets, valid_observed = valid
     torch.manual_seed(seed)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     history, best_loss, best_epoch, best_state = [], float("inf"), 0, None
@@ -123,13 +123,15 @@ def train_net(
             loss.backward()
             optimizer.step()
             total += loss.item() * observed[rows].sum().item()
-        model.eval()
-        with torch.no_grad():
-            valid_loss = hazard_loss(model(*valid_inputs), valid_targets, valid_observed).item()
+        valid_loss = float("nan")
+        if valid is not None:
+            model.eval()
+            with torch.no_grad():
+                valid_loss = hazard_loss(model(*valid[:-2]), *valid[-2:]).item()
         history.append(
             {"epoch": epoch, "train_loss": total / observed.sum().item(), "valid_loss": valid_loss}
         )
-        if valid_loss < best_loss:
+        if valid is None or valid_loss < best_loss:
             best_loss, best_epoch, best_state = valid_loss, epoch, copy.deepcopy(model.state_dict())
         elif epoch - best_epoch >= patience:
             break

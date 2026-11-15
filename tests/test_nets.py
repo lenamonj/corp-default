@@ -152,3 +152,16 @@ def test_train_net_stops_early_and_returns_the_best_state():
     assert history["valid_loss"].idxmin() + 1 == result["best_epoch"]
     for name, tensor in model.state_dict().items():
         assert torch.equal(tensor, result["state"][name])
+
+
+def test_train_net_without_a_stopping_set_runs_every_epoch_and_keeps_the_last_state():
+    seed_everything(0)
+    model = TabularNet(n_inputs=5)
+    result = train_net(
+        model, planted(400, 0), None, epochs=4, lr=0.01, weight_decay=0.0, patience=1, seed=0
+    )
+    assert list(result["history"]["epoch"]) == [1, 2, 3, 4]
+    assert result["history"]["valid_loss"].isna().all()
+    assert result["best_epoch"] == 4
+    for name, tensor in model.state_dict().items():
+        assert torch.equal(tensor, result["state"][name])
