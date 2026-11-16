@@ -183,3 +183,26 @@ def fold_map() -> str:
         f"Walking forward in {len(folds)} folds: each trains on the years up to "
         f"{HORIZON + 1} before the year it validates on.",
     )
+
+
+def sequence_tensor() -> str:
+    """Two rows of 2008 as five-year windows: a company with a reporting gap, and a young one."""
+    years = list(range(2004, 2009))
+    wide, tall, left = 140, 34, 280
+    rows = [
+        ("Filed in 2004, 2005, and 2008", (True, True, False, False, True)),
+        ("First filed in 2007", (False, False, False, True, True)),
+    ]
+    parts = [words(left + i * wide, 0, wide, str(year), "m") for i, year in enumerate(years)]
+    for row, (name, filed) in enumerate(rows):
+        y = 34 + row * 104
+        parts.append(words(0, y + 8, left - 20, name, "left b"))
+        parts.append(words(0, y + tall + 10, left - 20, "Mask", "left s"))
+        for i, on in enumerate(filed):
+            kind, label = ("train", "RATIOS") if on else ("embargo", "")
+            parts.append(timebar(left + i * wide + 3, y, wide - 6, tall, kind, label))
+            parts.append(words(left + i * wide, y + tall + 10, wide, "1" if on else "0", "m"))
+    return figure_plate(
+        stage(1000, 34 + len(rows) * 104 - 30, *parts),
+        "A row becomes five years of ratios, oldest first, and a mask that marks the years filed.",
+    )

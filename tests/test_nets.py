@@ -165,3 +165,31 @@ def test_train_net_without_a_stopping_set_runs_every_epoch_and_keeps_the_last_st
     assert result["best_epoch"] == 4
     for name, tensor in model.state_dict().items():
         assert torch.equal(tensor, result["state"][name])
+
+
+def test_sequence_net_learns_a_planted_trend():
+    def trend(n: int, seed: int) -> tuple[torch.Tensor, ...]:
+        rng = np.random.default_rng(seed)
+        x = rng.normal(size=(n, 5, 2)).astype(np.float32)
+        y = (x[:, -1, 0] - x[:, 0, 0] > 1.0).astype(np.float32)
+        return (
+            torch.from_numpy(x),
+            torch.ones(n, 5, dtype=torch.bool),
+            torch.from_numpy(np.repeat(y[:, None], 3, axis=1)),
+            torch.ones(n, 3),
+        )
+
+    seed_everything(0)
+    model = SequenceHazardNet(n_inputs=2)
+    train_net(
+        model,
+        trend(3000, 0),
+        trend(500, 1),
+        epochs=40,
+        lr=0.01,
+        weight_decay=0.0,
+        patience=5,
+        seed=0,
+    )
+    x, mask, y, _ = trend(500, 2)
+    assert roc_auc_score(y[:, 0].numpy(), predict(model, x, mask)[:, 0]) > 0.9
