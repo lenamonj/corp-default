@@ -198,6 +198,12 @@ uv run pytest -q
 The build executes each chapter from its source in `chapters/`, fills every number in the text from the cell that computed it, draws the design, and writes the notebook.
 Chapters hand tables to each other through `artifacts/`, so they build in order.
 
+A rebuild is repeatable.
+In a fresh clone, with these commands, two builds in a row wrote the same notebooks, results, and hand-off tables, byte for byte, and both matched the committed files.
+
+That was checked on Windows, on a CPU, with the library versions in `uv.lock`.
+It has not been checked on another machine.
+
 ## Dataset
 
 Lombardo, G., Pellegrino, M., Adosoglou, G., Cagnoni, S., Pardalos, P. M., Poggi, A. (2022). Machine Learning for Bankruptcy Prediction in the American Stock Market: Dataset and Benchmarks. *Future Internet* 14(8):244. [doi:10.3390/fi14080244](https://doi.org/10.3390/fi14080244)
