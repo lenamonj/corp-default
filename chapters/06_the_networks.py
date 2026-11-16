@@ -63,13 +63,14 @@
 # | **Blank flag** | One where a ratio could not be computed, zero elsewhere |
 # | **Hazard target** | For each of three years ahead: did the final filing fall in that year, given that it had not come sooner |
 #
-# Seven words describe a network and its training.
+# Eight words describe a network and its training.
 #
 # | Term | What it means |
 # | --- | --- |
 # | **Layer** | A set of weighted sums of the inputs, each passed through a simple bend |
 # | **Epoch** | One pass of the training rows through the network |
 # | **Batch** | The handful of rows the network sees before each small correction |
+# | **Learning rate** | The size of each correction to the weights |
 # | **Dropout** | Switching off a random share of a layer during training, so that no single unit is relied on |
 # | **Weight decay** | A steady pull of every weight towards zero |
 # | **Early stopping** | Ending training when rows set aside stop being predicted better |
@@ -397,7 +398,7 @@ def train_net(
 # A network's score also moves with its seed, as Chapter 5 found for trees.
 # So each fold is fitted with three seeds and the three sets of probabilities are averaged, a **seed ensemble**.
 #
-# The settings below are plain ones and are not searched.
+# The settings below are plain ones, a first guess that a small search checks later in this part.
 #
 # **Predict 1.** The trees scored {{ch6.trees_auc:.3f}} on these ratios. Will the network rank the same rows better, worse, or about the same?
 #
@@ -406,6 +407,7 @@ def train_net(
 # %%
 SETTINGS = {"epochs": 60, "lr": 1e-3, "weight_decay": 1e-2, "patience": 5}
 SEEDS = (SEED, SEED + 1, SEED + 2)
+DROPOUT = 0.2
 STOP_YEARS = 2  # the last training years of a fold, set aside to stop on
 
 
@@ -418,15 +420,23 @@ def stop_rows(train: pd.DataFrame) -> torch.Tensor:
     return torch.tensor((train["year"] > train["year"].max() - STOP_YEARS).to_numpy())
 
 
-def fit_net(make_model: Callable, train: tuple, stop: torch.Tensor, valid_inputs: tuple, seed: int):
+def fit_net(
+    make_model: Callable,
+    train: tuple,
+    stop: torch.Tensor,
+    valid_inputs: tuple,
+    seed: int,
+    lr: float,
+):
     """A stopped fit to choose the epochs, then a fit on every training row for that many."""
+    settings = {**SETTINGS, "lr": lr}
     seed_everything(seed)
     early = tuple(part[~stop] for part in train)
     held = tuple(part[stop] for part in train)
-    stopped = train_net(make_model(), early, held, seed=seed, **SETTINGS)
+    stopped = train_net(make_model(), early, held, seed=seed, **settings)
     seed_everything(seed)
     model = make_model()
-    train_net(model, train, None, seed=seed, **{**SETTINGS, "epochs": stopped["best_epoch"]})
+    train_net(model, train, None, seed=seed, **{**settings, "epochs": stopped["best_epoch"]})
     return {
         "scores": predict(model, *valid_inputs),
         "epochs": stopped["best_epoch"],
@@ -434,15 +444,16 @@ def fit_net(make_model: Callable, train: tuple, stop: torch.Tensor, valid_inputs
     }
 
 
-def tabular_fit(fold, seed: int, transform: bool = True) -> dict:
+def tabular_fit(
+    fold, seed: int, transform: bool = True, lr: float = SETTINGS["lr"], dropout: float = DROPOUT
+) -> dict:
     """One tabular network for one fold and one seed."""
     train, valid = dev.loc[fold.train], dev.loc[fold.valid]
     prepare = fit_inputs(train, RATIOS, transform)
     x = tensor(prepare(train))
     data = (x, tensor(train["target"]), torch.ones(len(train)))
-    return fit_net(
-        lambda: TabularNet(x.shape[1]), data, stop_rows(train), (tensor(prepare(valid)),), seed
-    )
+    make_model = lambda: TabularNet(x.shape[1], dropout=dropout)
+    return fit_net(make_model, data, stop_rows(train), (tensor(prepare(valid)),), seed, lr)
 
 
 def side_by_side(fit: Callable, **more) -> pd.DataFrame:
@@ -470,9 +481,8 @@ def as_oof(scores: np.ndarray) -> pd.DataFrame:
 
 
 # This cell fits the network 21 times, twice each. It takes about a minute on a recent laptop.
-tab_fits = side_by_side(tabular_fit)
-tab_oof = as_oof(seed_mean(tab_fits))
-tab_epochs = tab_fits.pivot(index="fold", columns="seed", values="epochs")
+plain_fits = side_by_side(tabular_fit)
+tab_epochs = plain_fits.pivot(index="fold", columns="seed", values="epochs")
 
 store.put("n_seeds", len(SEEDS))
 store.put("stop_years", STOP_YEARS)
@@ -523,7 +533,7 @@ def last_fold_epochs(fits: pd.DataFrame) -> list[int]:
     return sorted(fits.loc[fits["fold"] == last.year, "epochs"])
 
 
-tab_last = last_fold_epochs(tab_fits)
+tab_last = last_fold_epochs(plain_fits)
 held_last = stop_rows(train_last).numpy()
 # The reading says failures were more common in the years set aside. Checked here.
 assert train_last.loc[held_last, "target"].mean() > train_last.loc[~held_last, "target"].mean()
@@ -531,7 +541,7 @@ store.put("tab_last_low", tab_last[0])
 store.put("tab_last_high", tab_last[-1])
 
 viz.exhibit(
-    learning_curves(tab_fits),
+    learning_curves(plain_fits),
     f"On the last fold the tabular network is at its best after {tab_last[0]} to {tab_last[-1]} epochs",
     "Dots mark each seed's lowest loss on the rows set aside. The first training loss is off the frame.",
     f"{SOURCE}; training rows of the last fold, to {train_last['year'].max()}",
@@ -543,7 +553,15 @@ viz.exhibit(
 #
 # The two sets of lines sit at different heights because failures were more common in the years set aside.
 #
-# Q. How does the network rank against the trees on the same ratios?
+# The plain settings were a first guess, so a small **grid search** checks them.
+# It tries every pairing of three learning rates and two rates of dropout, six networks in all, each a seed ensemble on the seven folds.
+#
+# The learning rate comes first because it is the setting a network is most sensitive to.
+# Early stopping gives a slower rate the extra epochs it needs.
+#
+# The rule is written before the result, and it is the rule of Chapter 5: the highest mean average precision over the seven folds, each fold counting the same.
+#
+# Q. Which of the six does the rule choose?
 
 
 # %%
@@ -555,6 +573,54 @@ def mean_fold_ap(oof: pd.DataFrame) -> float:
     return by_year.mean()
 
 
+PLAIN = (SETTINGS["lr"], DROPOUT)
+GRID = [(lr, dropout) for lr in (3e-4, 1e-3, 3e-3) for dropout in (0.2, 0.4)]
+
+# Five more walk-forwards like the first one, which is the grid's sixth. About two minutes.
+grid_fits = {
+    (lr, dropout): plain_fits
+    if (lr, dropout) == PLAIN
+    else side_by_side(tabular_fit, lr=lr, dropout=dropout)
+    for lr, dropout in GRID
+}
+grid = pd.Series(
+    {setting: mean_fold_ap(as_oof(seed_mean(fits))) for setting, fits in grid_fits.items()}
+).rename_axis(["learning rate", "dropout"])
+best = grid.idxmax()
+tab_fits = grid_fits[best]
+tab_oof = as_oof(seed_mean(tab_fits))
+# How far the seed alone moves the chosen network: each of its three seeds scored on its own.
+one_seed = [
+    mean_fold_ap(as_oof(np.concatenate(list(part["scores"]))))
+    for _, part in tab_fits.groupby("seed")
+]
+# The reading says the plain settings are chosen and the grid spans less than the seeds do. Checked here.
+assert best == PLAIN
+assert grid.max() - grid.min() < max(one_seed) - min(one_seed)
+
+store.put("n_grid", len(GRID))
+store.put("best_lr", best[0])
+store.put("best_dropout", best[1])
+store.put("grid_best", grid.max())
+store.put("grid_worst", grid.min())
+store.put("seed_spread", max(one_seed) - min(one_seed))
+
+grid.unstack().round(4)
+
+# %% [markdown]
+# **Reading.** The rule chooses the plain settings: a learning rate of {{ch6.best_lr}} and dropout of {{ch6.best_dropout}}, at {{ch6.grid_best:.4f}}.
+# The lowest of the six scores {{ch6.grid_worst:.4f}}.
+#
+# The whole grid spans less than the {{ch6.seed_spread:.4f}} by which the chosen network's score moves from one seed to another.
+# That is the lesson of Chapter 5 again: among settings this close, a search is mostly choosing noise.
+#
+# So the search changes nothing here, and the network that goes on is the one already fitted.
+# The grid was small: the width of the layers and the weight decay stayed as they were.
+#
+# Q. How does the network rank against the trees on the same ratios?
+
+
+# %%
 def step(below: str, above: str, models: dict) -> pd.Series:
     """The paired difference of `above` over `below`, with its bootstrap interval."""
     return paired_table({below: models[below], above: models[above]}, [below, above]).iloc[0]
@@ -764,7 +830,9 @@ def sequence_fit(fold, seed: int) -> dict:
     )
     valid_inputs = (tensor(values[rows_valid]), torch.tensor(mask[rows_valid]))
     width = values.shape[2]
-    return fit_net(lambda: SequenceHazardNet(width), data, stop_rows(train), valid_inputs, seed)
+    return fit_net(
+        lambda: SequenceHazardNet(width), data, stop_rows(train), valid_inputs, seed, SETTINGS["lr"]
+    )
 
 
 _, asked_last = hazard_targets(train_last, known_to=last.year - 1)
@@ -1116,11 +1184,6 @@ leader = finalists.index[0]
 chosen = TREES if leader == BLEND and blend_step["ap_diff_lo"] <= 0 else leader
 chosen_folds = fold_table(ladder[chosen]).set_index("fold")
 crisis, calm = chosen_folds.loc["crisis folds"], chosen_folds.loc["calm folds"]
-# The seed moves one network's score by more than the margin of the choice. Measured on the three seeds.
-one_seed = [
-    mean_fold_ap(as_oof(np.concatenate(list(part["scores"]))))
-    for _, part in tab_fits.groupby("seed")
-]
 # The readings say the blend leads by less than a seed moves the network, the trees are named, and the folds overlap.
 assert leader == BLEND and finalists.index[1] == TREES and chosen == TREES
 assert finalists.iloc[0] - finalists.iloc[1] < max(one_seed) - min(one_seed)
@@ -1128,7 +1191,6 @@ assert crisis["roc_auc_hi"] > calm["roc_auc_lo"]
 
 store.put("chosen_ap", finalists.iloc[0])
 store.put("runner_up_ap", finalists.iloc[1])
-store.put("seed_spread", max(one_seed) - min(one_seed))
 store.put("crisis_auc", crisis["roc_auc"])
 store.put("crisis_auc_low", crisis["roc_auc_lo"])
 store.put("crisis_auc_high", crisis["roc_auc_hi"])
@@ -1160,8 +1222,9 @@ frozen[NETWORK] = {
     "features": RATIOS,
     "inputs": "quantile transform to a normal scale, blanks at zero, a flag for each ratio with blanks",
     "hidden": 64,
-    "dropout": 0.2,
-    "settings": SETTINGS,
+    "dropout": best[1],
+    "settings": {**SETTINGS, "lr": best[0]},
+    "grid": {"lr": sorted({lr for lr, _ in GRID}), "dropout": sorted({rate for _, rate in GRID})},
     "seeds": list(SEEDS),
     "stop_years": STOP_YEARS,
 }
@@ -1184,11 +1247,12 @@ oof_scores.groupby("model", sort=False)["target"].agg(rows="size", positives="su
 #
 # 1. A network needs its inputs on one scale: the same network scores {{ch6.raw_auc:.3f}} on ratios as they come and {{ch6.tab_auc:.3f}} on transformed ones (Exhibit 1).
 # 2. Early stopping on a fold's own last two training years chooses {{ch6.tab_last_low}} to {{ch6.tab_last_high}} epochs for the tabular network on the last fold, and the validation year is never touched (Exhibit 2).
-# 3. On the same {{ch6.n_ratios}} ratios the tabular network's ROC-AUC differs from the trees' by {{ch6.tab_step:.3f}}, with an interval below zero (Exhibit 6).
-# 4. A recurrent network that reads five years in order ranks lower still, at {{ch6.seq_auc:.3f}}: history does not help here in this form either (Exhibit 3).
-# 5. Three hazards give a term structure that rises as it should and is too steep: the riskiest tenth is given {{ch6.top_pd_3:.1%}} over three years and fails at {{ch6.top_rate_3:.1%}} (Exhibit 4).
-# 6. The trees and the network disagree, with a rank correlation of {{ch6.rank_correlation:.2f}}, and each catches failures the other misses (Exhibit 5).
-# 7. The blend scores {{ch6.blend_auc:.3f}}, and its difference from the trees alone has an interval that holds zero, so the simpler tree model is the one named (Exhibit 6).
+# 3. A grid of {{ch6.n_grid}} pairings of learning rate and dropout chooses the plain settings, and the whole grid spans less than the seed moves one network (Exhibit 2).
+# 4. On the same {{ch6.n_ratios}} ratios the tabular network's ROC-AUC differs from the trees' by {{ch6.tab_step:.3f}}, with an interval below zero (Exhibit 6).
+# 5. A recurrent network that reads five years in order ranks lower still, at {{ch6.seq_auc:.3f}}: history does not help here in this form either (Exhibit 3).
+# 6. Three hazards give a term structure that rises as it should and is too steep: the riskiest tenth is given {{ch6.top_pd_3:.1%}} over three years and fails at {{ch6.top_rate_3:.1%}} (Exhibit 4).
+# 7. The trees and the network disagree, with a rank correlation of {{ch6.rank_correlation:.2f}}, and each catches failures the other misses (Exhibit 5).
+# 8. The blend scores {{ch6.blend_auc:.3f}}, and its difference from the trees alone has an interval that holds zero, so the simpler tree model is the one named (Exhibit 6).
 
 # %% [markdown]
 # # Your Turn
@@ -1205,13 +1269,13 @@ oof_scores.groupby("model", sort=False)["target"].agg(rows="size", positives="su
 #
 # </details>
 #
-# **2. A tuned network.** The settings were plain and never searched. Does a wider network, or more dropout, close the gap to the trees?
+# **2. A wider search.** The grid tried the learning rate and dropout only. Does a wider network, or less weight decay, close the gap to the trees?
 #
 # <details>
 # <summary>Hint</summary>
 #
-# `TabularNet` takes `hidden` and `dropout`.
-# Change the `lambda` in `tabular_fit` to pass them, score each choice by `mean_fold_ap`, and write the rule down before you look.
+# `TabularNet` takes `hidden`, and `SETTINGS` holds `weight_decay`.
+# Pass them through `tabular_fit` as `lr` and `dropout` are passed, score each choice by `mean_fold_ap`, and write the rule down before you look.
 #
 # </details>
 #
