@@ -1101,14 +1101,19 @@ viz.exhibit(
 # Nothing built since the trees first read the ratios has ranked above them.
 #
 # One model must be named before the holdout is opened.
-# The rule has not changed: the highest mean average precision over the seven folds, among the tree model, the network, and the blend.
+# The candidates are the tree model, the network, and the blend, and the first test is the one used all along: the highest mean average precision over the seven folds.
 #
-# Q. Which model does the rule name?
+# A second test guards against complexity that buys nothing.
+# A blend must beat its simplest member with a paired interval above zero, or the simpler model stands.
+#
+# Q. Which model do the two tests name?
 
 # %%
 finalists = pd.Series({name: mean_fold_ap(ladder[name]) for name in (TREES, NETWORK, BLEND)})
 finalists = finalists.sort_values(ascending=False)
-chosen = finalists.index[0]
+leader = finalists.index[0]
+# The blend is two models. It is named only if its gain over the trees alone has an interval above zero.
+chosen = TREES if leader == BLEND and blend_step["ap_diff_lo"] <= 0 else leader
 chosen_folds = fold_table(ladder[chosen]).set_index("fold")
 crisis, calm = chosen_folds.loc["crisis folds"], chosen_folds.loc["calm folds"]
 # The seed moves one network's score by more than the margin of the choice. Measured on the three seeds.
@@ -1116,8 +1121,8 @@ one_seed = [
     mean_fold_ap(as_oof(np.concatenate(list(part["scores"]))))
     for _, part in tab_fits.groupby("seed")
 ]
-# The readings say the blend is named, by less than a seed moves the network, and the folds overlap.
-assert chosen == BLEND and finalists.index[1] == TREES
+# The readings say the blend leads by less than a seed moves the network, the trees are named, and the folds overlap.
+assert leader == BLEND and finalists.index[1] == TREES and chosen == TREES
 assert finalists.iloc[0] - finalists.iloc[1] < max(one_seed) - min(one_seed)
 assert crisis["roc_auc_hi"] > calm["roc_auc_lo"]
 
@@ -1135,10 +1140,12 @@ print(finalists.round(4).to_frame("mean average precision, seven folds"))
 chosen_folds[["rows", "positives", "roc_auc", "roc_auc_lo", "roc_auc_hi", "capture_5"]].round(3)
 
 # %% [markdown]
-# **Reading.** The rule names the blend, at {{ch6.chosen_ap:.4f}} against {{ch6.runner_up_ap:.4f}} for the trees alone.
-# The margin is far smaller than the {{ch6.seed_spread:.4f}} by which the network's own score moves from one seed to another, so the rule is choosing between equals.
+# **Reading.** The blend has the highest mean average precision, at {{ch6.chosen_ap:.4f}} against {{ch6.runner_up_ap:.4f}} for the trees alone.
+# The margin is far smaller than the {{ch6.seed_spread:.4f}} by which the network's own score moves from one seed to another, and the blend's paired interval over the trees holds zero.
 #
-# The blend ranks at {{ch6.crisis_auc:.3f}} in the crisis folds, with an interval from {{ch6.crisis_auc_low:.3f}} to {{ch6.crisis_auc_high:.3f}}.
+# So the second test decides, and the simpler model stands: the tree model of Chapter 5 is the one named.
+#
+# It ranks at {{ch6.crisis_auc:.3f}} in the crisis folds, with an interval from {{ch6.crisis_auc_low:.3f}} to {{ch6.crisis_auc_high:.3f}}.
 # In the calm folds it ranks at {{ch6.calm_auc:.3f}}, from {{ch6.calm_auc_low:.3f}} to {{ch6.calm_auc_high:.3f}}, so the two intervals overlap.
 #
 # Q. What does the chapter hand on?
@@ -1167,7 +1174,7 @@ store.save_json("frozen", frozen)
 oof_scores.groupby("model", sort=False)["target"].agg(rows="size", positives="sum")
 
 # %% [markdown]
-# **Reading.** The table of scores now holds seven rungs on the same rows, and the record marks the blend as the model chosen.
+# **Reading.** The table of scores now holds seven rungs on the same rows, and the record marks the tree model as the one chosen.
 #
 # Every choice in this casebook was made on those rows.
 # **The next chapter opens the years none of them has seen.**
@@ -1181,7 +1188,7 @@ oof_scores.groupby("model", sort=False)["target"].agg(rows="size", positives="su
 # 4. A recurrent network that reads five years in order ranks lower still, at {{ch6.seq_auc:.3f}}: history does not help here in this form either (Exhibit 3).
 # 5. Three hazards give a term structure that rises as it should and is too steep: the riskiest tenth is given {{ch6.top_pd_3:.1%}} over three years and fails at {{ch6.top_rate_3:.1%}} (Exhibit 4).
 # 6. The trees and the network disagree, with a rank correlation of {{ch6.rank_correlation:.2f}}, and each catches failures the other misses (Exhibit 5).
-# 7. The blend scores {{ch6.blend_auc:.3f}}, and its difference from the trees alone has an interval that holds zero; the rule still names it, by a margin smaller than seed noise (Exhibit 6).
+# 7. The blend scores {{ch6.blend_auc:.3f}}, and its difference from the trees alone has an interval that holds zero, so the simpler tree model is the one named (Exhibit 6).
 
 # %% [markdown]
 # # Your Turn
