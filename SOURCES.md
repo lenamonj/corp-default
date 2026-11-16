@@ -36,8 +36,22 @@ Cross-check of the paper against the file, computed here on 2026-11-11: the pape
 year plus one. Firms observed in file year `t` equal the paper's total firms in year `t + 1`, and
 failed companies whose last file year is `t` equal the paper's bankrupt firms in year `t + 1`.
 The paper's yearly totals sum to 78,682 firm-years and 609 failures, both equal to the file.
-The file holds 8,971 distinct `company_name` values, not 8,262. No subset tried reproduces 8,262
-(companies with two or more years: 8,216; companies never labelled failed: 8,362). The difference is unreconciled.
+The file holds 8,971 distinct `company_name` values, numbered `C_1` to `C_8971` with none missing, not 8,262.
+No definition tried reproduces 8,262 exactly, and the difference cannot be settled from the file.
+
+| Definition tried (computed here, 2026-11-15) | Companies |
+|---|---|
+| Every company in the file | 8,971 |
+| Never labelled failed | 8,362 |
+| No gap in its reporting years | 8,261 |
+| Two or more years | 8,216 |
+| Distinct after matching companies on identical accounts | 8,971 (no two companies share a row) |
+| Seen in any window of consecutive years, 1999 to 2018 | None within 3 of 8,262 except the whole span |
+
+The nearest is the 8,261 companies with no gap in their years, one short of the paper's figure.
+That is a near miss, not an explanation: neither paper describes such a filter, and both papers' yearly
+totals (78,682 firm-years, 609 failures) include the 710 companies that do have gaps.
+The casebook uses the file's count, and Chapter 1 states the difference.
 
 Follow-up paper by the same authors, cited by the dataset's README: Pellegrino, M., Lombardo, G.,
 Adosoglou, G., Cagnoni, S., Pardalos, P. M., Poggi, A. (2024). A Multi-Head LSTM Architecture for
@@ -164,4 +178,4 @@ These are not used until a primary source is read.
 | Zmijewski (1984) coefficients and last page | The article is behind the JSTOR paywall and no open copy was found. Secondary sources disagree on the sign and direction of the liquidity term |
 | Units of the 18 items | Not stated in either paper, the authors' README, or the Kaggle page |
 | Data vendor | Not named in either paper, the authors' README, or the Kaggle page |
-| The 8,262 company count | Stated four times by the 2022 paper, once by the 2024 paper, and once by the README; the file holds 8,971 and no subset tried gives 8,262 |
+| The 8,262 company count | Stated four times by the 2022 paper, once by the 2024 paper, and once by the README; the file holds 8,971 and no definition tried gives 8,262 (nearest: 8,261 with no reporting gap); only the authors can settle it |
