@@ -143,6 +143,13 @@ def exhibit(
     # Let a constrained layout set the margins around tick labels, freeze it, then grow the figure
     # and move every axes down into the new room.
     if fig.get_layout_engine() is None:
+        # A colorbar made at full size sits in a grid whose spacer rows have zero height, which a
+        # constrained layout cannot divide by.
+        for ax in fig.axes:
+            if spec := ax.get_subplotspec():
+                grid = spec.get_gridspec()
+                grid.set_height_ratios([ratio or 1e-3 for ratio in grid.get_height_ratios()])
+                grid.set_width_ratios([ratio or 1e-3 for ratio in grid.get_width_ratios()])
         fig.set_layout_engine("constrained", w_pad=0.15, h_pad=0.1)
     fig.draw_without_rendering()
     fig.set_layout_engine("none")

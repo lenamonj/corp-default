@@ -171,3 +171,11 @@ def test_a_symlog_axis_shows_plain_numbers_on_both_sides_of_zero():
     viz.symlog_axis(ax, "x")
     ax.set_xticks([-10_000, -100, 0, 100, 10_000])
     assert _tick_labels(fig, ax.xaxis) == ["-10,000", "-100", "0", "100", "10,000"]
+
+
+def test_an_exhibit_takes_a_colorbar_at_its_default_size():
+    fig, ax = plt.subplots(figsize=(8, 4))
+    image = ax.imshow([[0, 1], [2, 3]], aspect="auto")
+    bar = fig.colorbar(image, ax=ax)
+    viz.exhibit(fig, "A heatmap", "The bar runs most of the chart's height.")
+    assert bar.ax.get_position().height > 0.75 * ax.get_position().height
