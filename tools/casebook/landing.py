@@ -44,9 +44,9 @@ LEARN = {
     7: "Open a sealed holdout once, calibrate, explain the score, and state the limits",
 }
 STEPS = [
-    ("STEP 1", "Get the data", "One command fetches the file and checks it.", "data/README.md"),
-    ("STEP 2", "Chapter 1: The Panel", "What exactly is in this file?", "notebooks/01_the_panel.ipynb"),
-    ("STEP 3", "Chapter 7: The Verdict", "What does the sealed holdout say?", "notebooks/07_the_verdict.ipynb"),
+    ("FIRST", "Get the data", "One command fetches the file and checks it.", "data/README.md"),
+    ("NEXT", "Chapter 1: The Panel", "What exactly is in this file?", "notebooks/01_the_panel.ipynb"),
+    ("SHORTCUT", "Chapter 7: The Verdict", "Only here for the result? The holdout, opened once.", "notebooks/07_the_verdict.ipynb"),
 ]  # fmt: skip
 ARROW = (
     '<svg class="cb-go" width="40" height="40" viewBox="0 0 40 40">'
