@@ -19,7 +19,7 @@
 
 .cb-step { position: relative; height: 92px; display: flex; align-items: center; gap: 28px; padding: 0 40px 0 46px; background: var(--sheet); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
 .cb-step .cb-edge { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--signal); }
-.cb-step .cb-label { flex: none; width: 64px; font: 700 12px/16px var(--mono); letter-spacing: .14em; color: var(--slate); }
+.cb-step .cb-label { flex: none; width: 84px; font: 700 12px/16px var(--mono); letter-spacing: .14em; color: var(--slate); }
 .cb-step .cb-what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .cb-step .cb-title { font: 600 22px/28px var(--display); color: var(--ink); white-space: nowrap; }
 .cb-step .cb-line { font: 400 15px/20px var(--sans); color: var(--slate); white-space: nowrap; }

@@ -97,7 +97,11 @@ def build(
         mark = house_mark(event_table(load_raw()))
     with Studio() as studio:
         parts, exhibits, minutes = apply(nb, _filled(plan, known), mark, studio)
-    nb.metadata = {"kernelspec": KERNELSPEC, "language_info": nb.metadata["language_info"]}
+    # The language version is kept to its minor number, so a rebuild on another patch of the same
+    # Python writes the same file.
+    language = dict(nb.metadata["language_info"])
+    language["version"] = ".".join(language["version"].split(".")[:2])
+    nb.metadata = {"kernelspec": KERNELSPEC, "language_info": language}
     for place, cell in enumerate(nb.cells):
         cell.id = f"cell-{place:03d}"
     out.mkdir(parents=True, exist_ok=True)

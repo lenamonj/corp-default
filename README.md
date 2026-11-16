@@ -29,9 +29,9 @@ The reader is assumed to know Python and basic finance.
 
 ## Start Here
 
-<a href="data/README.md"><img src="assets/readme/landing/step1.png" width="830" alt="Step 1. Get the data. One command fetches the file and checks it."></a>
-<a href="notebooks/01_the_panel.ipynb"><img src="assets/readme/landing/step2.png" width="830" alt="Step 2. Chapter 1: The Panel. What exactly is in this file?"></a>
-<a href="notebooks/07_the_verdict.ipynb"><img src="assets/readme/landing/step3.png" width="830" alt="Step 3. Chapter 7: The Verdict. What does the sealed holdout say?"></a>
+<a href="data/README.md"><img src="assets/readme/landing/step1.png" width="830" alt="First: get the data. One command fetches the file and checks it."></a>
+<a href="notebooks/01_the_panel.ipynb"><img src="assets/readme/landing/step2.png" width="830" alt="Next: Chapter 1, The Panel. What exactly is in this file?"></a>
+<a href="notebooks/07_the_verdict.ipynb"><img src="assets/readme/landing/step3.png" width="830" alt="Shortcut: Chapter 7, The Verdict. Only here for the result? The holdout, opened once."></a>
 
 ## The Seven Chapters
 
@@ -197,6 +197,12 @@ uv run pytest -q
 
 The build executes each chapter from its source in `chapters/`, fills every number in the text from the cell that computed it, draws the design, and writes the notebook.
 Chapters hand tables to each other through `artifacts/`, so they build in order.
+
+A rebuild is repeatable.
+In a fresh clone, with these commands, two builds in a row wrote the same notebooks, results, and hand-off tables, byte for byte, and both matched the committed files.
+
+That was checked on Windows, on a CPU, with the library versions in `uv.lock`.
+It has not been checked on another machine.
 
 ## Dataset
 

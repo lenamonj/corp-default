@@ -732,6 +732,9 @@ assert board.loc[CLASSIC, "roc_auc"] < board.loc["All ratios, logistic", "roc_au
 assert steps.loc["Plus history", "roc_auc_diff_lo"] < 0 < steps.loc["Plus history", "roc_auc_diff"]
 assert board["roc_auc"].idxmax() != CHOSEN
 assert settled.sum() == 2
+REFIT = "Five ratios, refitted"
+assert steps.loc[REFIT, "roc_auc_diff_lo"] < 0 < steps.loc[REFIT, "roc_auc_diff"]
+store.put("refit_step", steps.loc[REFIT, "roc_auc_diff"])
 
 viz.exhibit(
     fig,
@@ -753,6 +756,9 @@ both.round(3)
 #
 # The fine order does not hold.
 # History is a step up here, {{ch7.history_step:.3f}}, with an interval from {{ch7.history_step_low:.3f}} to {{ch7.history_step_high:.3f}} that holds zero, so Predict 2 has no firm answer.
+#
+# That fits what Chapter 5 saw fold by fold: history lost in the folds that trained on the file's first years and gained in the later ones, and the final model trains on all of them.
+# The refit of Altman's five ratios, a step down in Chapter 4, is a step of {{ch7.refit_step:.3f}} here, with an interval that holds zero as well.
 #
 # The highest rung on the holdout is "{{ch7.best_rung}}", at {{ch7.best_rung_auc:.3f}}, and it is not the model chosen.
 # Only {{ch7.n_settled}} of the {{ch7.n_steps}} steps have an interval clear of zero.
