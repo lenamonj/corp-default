@@ -1,0 +1,27 @@
+{
+  "number": 6,
+  "title": "The Networks",
+  "question": "Can a network read a company's history?",
+  "goals": [
+    "Learn the new words, seed, and load.",
+    "Put every ratio on one scale.",
+    "Train a small network on the ratios.",
+    "Turn each row into five years.",
+    "Read the years in order.",
+    "Turn three hazards into a term structure.",
+    "Set the networks beside the trees.",
+    "Average two rankings into one.",
+    "Read seven rungs and choose one model."
+  ],
+  "pitfalls": {
+    "raw_inputs": {
+      "name": "Feeding a network ratios as they come",
+      "naive_label": "ROC-AUC, ratios as they come",
+      "naive_value": "{{ch6.raw_auc:.3f}}",
+      "honest_label": "ROC-AUC, the same network on transformed ratios",
+      "honest_value": "{{ch6.tab_auc:.3f}}",
+      "why": "A network adds its inputs up, so one ratio in the thousands drowns the rest. A tree only asks which side of a number a row is on."
+    }
+  },
+  "next": {"title": "The Verdict", "line": "What does the sealed holdout say?"}
+}

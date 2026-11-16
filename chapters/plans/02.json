@@ -1,0 +1,35 @@
+{
+  "number": 2,
+  "title": "The Event",
+  "question": "What does failed mean, and when did it happen?",
+  "goals": [
+    "Learn the new columns, then load and look.",
+    "See why the flag cannot be a target.",
+    "Date the failure and build the label.",
+    "Test the label against the accounts.",
+    "Read the failure rate year by year.",
+    "Account for the companies that leave.",
+    "Draw survival curves that count every exit.",
+    "Compare labels at one, two, and three years.",
+    "Write the tables the next chapters read."
+  ],
+  "pitfalls": {
+    "split": {
+      "name": "Testing on companies the model has met",
+      "naive_label": "ROC-AUC, rows held out at random",
+      "naive_value": "{{ch2.flag_auc_rows:.3f}}",
+      "honest_label": "ROC-AUC, companies held out whole",
+      "honest_value": "{{ch2.flag_auc_companies:.3f}}",
+      "why": "Every row of a company carries the same flag, so a random split lets the model recognise it."
+    },
+    "censoring": {
+      "name": "Treating every other exit as censoring",
+      "naive_label": "One minus Kaplan-Meier, {{ch2.at_years}} years",
+      "naive_value": "{{ch2.km_fail_at:.1%}}",
+      "honest_label": "Cumulative incidence, {{ch2.at_years}} years",
+      "honest_value": "{{ch2.cif_fail_at:.1%}}",
+      "why": "Kaplan-Meier describes a world where no company leaves another way, and {{ch2.cif_left_at:.0%}} do."
+    }
+  },
+  "next": {"title": "The Signal", "line": "Where in the accounts does failure show, and how early?"}
+}

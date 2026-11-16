@@ -1,0 +1,30 @@
+{
+  "number": 7,
+  "title": "The Verdict",
+  "question": "What does the sealed holdout say?",
+  "goals": [
+    "Fix the models, the choice, the comparison.",
+    "Turn a percentile into a probability.",
+    "Set seven grades before the test.",
+    "Refit, then open the sealed years once.",
+    "Redraw the ladder on the holdout.",
+    "Count what each review budget finds.",
+    "Check the probabilities against the outcomes.",
+    "Cut the result several ways.",
+    "Credit the score to its inputs.",
+    "Read three companies closely.",
+    "Measure how early the warning comes.",
+    "State the limits, and write the results."
+  ],
+  "pitfalls": {
+    "pooled_calibration": {
+      "name": "Checking a probability on all years at once",
+      "naive_label": "Gap between mean PD and failure rate, all years pooled",
+      "naive_value": "{{ch7.pooled_gap:.2%}}",
+      "honest_label": "Largest gap in a single year, map fitted on the other years",
+      "honest_value": "{{ch7.worst_gap:.2%}}",
+      "why": "A pooled check averages good years against bad ones. A lender lives through them one at a time."
+    }
+  },
+  "next": {"title": "The Casebook", "line": "Back to the front page, and the results in one place."}
+}

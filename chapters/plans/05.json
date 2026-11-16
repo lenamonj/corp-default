@@ -1,0 +1,36 @@
+{
+  "number": 5,
+  "title": "The Trees",
+  "question": "What do non-linearity and history buy?",
+  "goals": [
+    "Learn the new words, then load and look.",
+    "Read one small tree, then add many.",
+    "Leave the rare failures unweighted.",
+    "Measure the noise in one validation score.",
+    "Choose settings and rounds on seven folds.",
+    "Freeze the settings and score the ratios.",
+    "Add history and test what it buys.",
+    "Test two more blocks of inputs.",
+    "Tell the model which way risk runs.",
+    "Read five rungs and choose one model."
+  ],
+  "pitfalls": {
+    "weights": {
+      "name": "Weighting the failures up",
+      "naive_label": "Mean predicted probability, failures weighted",
+      "naive_value": "{{ch5.weighted_mean:.1%}}",
+      "honest_label": "Share of the same rows that fail",
+      "honest_value": "{{ch5.oof_base_rate:.1%}}",
+      "why": "The weight tells the model that failures are as common as survivors, and its probabilities believe it."
+    },
+    "one_window": {
+      "name": "Choosing on one validation window",
+      "naive_label": "Average precision of each window's winner, on its window",
+      "naive_value": "{{ch5.winner_own:.3f}}",
+      "honest_label": "The same {{ch5.n_folds}} winners, on the folds that did not choose them",
+      "honest_value": "{{ch5.winner_elsewhere:.3f}}",
+      "why": "The best of many scores on one window is partly luck, and the luck stays behind in that window."
+    }
+  },
+  "next": {"title": "The Networks", "line": "Can a network read a company's history?"}
+}
