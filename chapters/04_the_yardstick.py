@@ -995,6 +995,12 @@ classics = pd.DataFrame(
 
 store.put("z_auc", classics.loc["Z, every division", "ROC-AUC"])
 store.put("z_makers", classics.loc["Z, manufacturers", "ROC-AUC"])
+# The reading says the two intervals overlap, and only just. Checked here.
+assert (
+    0
+    < classics.loc["Z, all other divisions", "high"] - classics.loc["Z, manufacturers", "low"]
+    < 0.02
+)
 store.put("z_makers_low", classics.loc["Z, manufacturers", "low"])
 store.put("z_others", classics.loc["Z, all other divisions", "ROC-AUC"])
 store.put("z_others_high", classics.loc["Z, all other divisions", "high"])
@@ -1006,7 +1012,7 @@ classics.round(3)
 # **Reading.** Z has a ROC-AUC of {{ch4.z_auc:.3f}}, a little above leverage alone.
 # Among manufacturers it scores {{ch4.z_makers:.3f}} and among the rest {{ch4.z_others:.3f}}.
 #
-# The lower end of the first interval, {{ch4.z_makers_low:.3f}}, and the upper end of the second, {{ch4.z_others_high:.3f}}, almost meet.
+# The lower end of the first interval, {{ch4.z_makers_low:.3f}}, is just below the upper end of the second, {{ch4.z_others_high:.3f}}, so the two barely overlap.
 # So Z very likely ranks better where it was built, and the file cannot quite prove it.
 #
 # Z'' is Altman's later form for companies that are not manufacturers: it drops the sales ratio and uses book equity.
@@ -1074,7 +1080,7 @@ viz.exhibit(
 # # Refitting the Classics
 #
 # Z is old, and two things in it could be out of date: the weights, or the choice of five ratios.
-# A refit tells them apart.
+# A refit tests the first.
 #
 # It keeps the five ratios and fits new weights to this data with a **logistic regression**, a model that adds up weighted inputs and turns the sum into a probability.
 #
@@ -1335,7 +1341,7 @@ store.put("rank_auc", roc_auc_score(rank_oof["target"], rank_oof["pct"]))
 store.put("rank_step", rank_step["roc_auc_diff"])
 store.put("rank_step_low", rank_step["roc_auc_diff_lo"])
 store.put("rank_step_high", rank_step["roc_auc_diff_hi"])
-rank_step[["roc_auc_diff", "roc_auc_diff_lo", "roc_auc_diff_hi"]].round(3)
+rank_step[["roc_auc_diff", "roc_auc_diff_lo", "roc_auc_diff_hi"]].astype(float).round(3)
 
 # %% [markdown]
 # **Reading.** On a rank scale the same five ratios score {{ch4.rank_auc:.3f}}, ahead of Z by {{ch4.rank_step:.3f}}, with an interval from {{ch4.rank_step_low:.3f}} to {{ch4.rank_step_high:.3f}}.

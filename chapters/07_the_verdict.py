@@ -186,7 +186,7 @@ record
 # Three things are fixed here, before any outcome of the holdout years is read.
 #
 # - **The models.** Each of the seven rungs is refitted on the development years, {{ch7.dev_first}} to {{ch7.dev_last}}, with the settings in the record and nothing tuned again.
-# - **The choice.** The model named in Chapter 6 by two tests written before their results: the highest mean average precision over the seven folds, and the simpler model unless a blend beats it with an interval above zero.
+# - **The choice.** The model named in Chapter 6 by two tests, both fixed before the holdout was opened: the highest mean average precision over the seven folds, and the simpler model unless a blend beats it with an interval above zero.
 # - **The primary comparison.** The chosen model against "{{ch7.classic}}", as a paired difference in ROC-AUC on the holdout, with the share of failures the chosen model finds at the middle budget beside it.
 #
 # On the walk-forward that difference is {{ch7.walked_step:.3f}}, with an interval from {{ch7.walked_step_low:.3f}} to {{ch7.walked_step_high:.3f}}.
@@ -657,7 +657,9 @@ board[
 
 # %% [markdown]
 # **Reading.** The chosen model scores {{ch7.holdout_auc:.3f}} on the holdout, with an interval from {{ch7.holdout_auc_low:.3f}} to {{ch7.holdout_auc_high:.3f}}.
-# That is above its walk-forward score, which answers Predict 1: the number that chose the model did not flatter it.
+# That is above its walk-forward score, which answers Predict 1.
+#
+# It does not show that the walk-forward score was free of flattery: the two samples differ in more than the model, as the next part says.
 #
 # The primary comparison is settled.
 # The chosen model is ahead of the published score by {{ch7.primary_step:.3f}}, with an interval from {{ch7.primary_step_low:.3f}} to {{ch7.primary_step_high:.3f}}.

@@ -636,7 +636,7 @@ viz.exhibit(
 #
 # Three panels are marked, because their curves change direction.
 #
-# Q. Which of the {{ch3.n_continuous}} ratios turn?
+# Q. Which of the {{ch3.n_continuous}} ratios that are not yes-or-no flags turn?
 
 # %%
 shape = pd.DataFrame(
@@ -1466,7 +1466,7 @@ pd.Series(
 # 3. Risk is not spread evenly along a ratio: the most levered fifth fails at {{ch3.top_fifth_rate:.1%}} and the rest at {{ch3.rest_rate:.1%}}, and {{ch3.n_turning}} of the {{ch3.n_continuous}} ratios turn (Exhibit 3).
 # 4. Industry is a weak signal: by division the rate runs from {{ch3.construction_rate:.1%}} to {{ch3.retail_rate:.1%}}, with wide intervals (Exhibit 4).
 # 5. A deeper loss is not a higher risk: in the lowest decile of return on assets {{ch3.weak_debt_free:.1%}} of debt-free firm-years fail, against {{ch3.weak_with_debt:.1%}} of those with long-term debt (Exhibit 5).
-# 6. Alone, no ratio has a ROC-AUC above {{ch3.best_auc:.2f}}, and leverage and market value lead (Exhibit 6).
+# 6. Alone, the best ratio has a ROC-AUC of {{ch3.best_auc:.3f}}, and leverage and market value lead (Exhibit 6).
 # 7. The ratios repeat each other inside families: {{ch3.same_family}} of {{ch3.n_continuous}} have their closest neighbour in their own family (Exhibit 7).
 # 8. Leverage and losses together mark the risk: {{ch3.levered_loss_rows:.0%}} of the rows hold {{ch3.levered_loss_positives:.0%}} of the positives (Exhibit 8).
 # 9. Levels show early and changes show late: market value falls {{ch3.mcap_fall_final:.0%}} in the median failed company's last year (Exhibit 9).
