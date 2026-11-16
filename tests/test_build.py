@@ -143,6 +143,11 @@ def test_the_notebook_is_written_for_the_corp_default_kernel_without_timings(nb)
     assert all("execution" not in cell.metadata for cell in nb.cells)
 
 
+def test_the_notebook_records_the_language_version_without_its_patch_number(nb):
+    # 3.13, not 3.13.8: two machines on different patches must write the same file
+    assert re.fullmatch(r"\d+\.\d+", nb.metadata.language_info.version)
+
+
 def test_a_rebuild_of_an_unchanged_chapter_writes_the_same_file(built, tmp_path, toy_mark):
     from tools.casebook.build import build
 
