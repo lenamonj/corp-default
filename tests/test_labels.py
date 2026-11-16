@@ -62,3 +62,24 @@ def test_event_table_by_hand():
     assert events.loc["L", "event"] == "left"
     assert events.loc["R", "event"] == "reporting"
     assert events.loc["R", "duration"] == 1
+
+
+def test_build_label_by_hand():
+    def company(name, first, last, status):
+        return [
+            {"company_name": name, "year": y, "status_label": status}
+            for y in range(first, last + 1)
+        ]
+
+    frame = pd.DataFrame(
+        company("F", 2010, 2015, "failed")  # fails after its 2015 filing
+        + company("E", 2015, PANEL_END, "failed")  # fails at the panel's end
+        + company("A", 2014, PANEL_END, "alive")
+    )
+    labelled = build_label(frame, horizon=2)
+    got = {(row.company_name, row.year): row.target for row in labelled.itertuples()}
+    assert got == {
+        ("F", 2010): 0, ("F", 2011): 0, ("F", 2012): 0, ("F", 2013): 1, ("F", 2014): 1,
+        ("E", 2015): 0, ("E", 2016): 1,
+        ("A", 2014): 0, ("A", 2015): 0, ("A", 2016): 0,
+    }  # fmt: skip

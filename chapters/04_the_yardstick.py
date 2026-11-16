@@ -85,7 +85,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import KFold, cross_val_predict
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import QuantileTransformer, StandardScaler
 
 from corp_default import store, viz
 from corp_default.classic import ALTMAN_ZONES, altman_z2, altman_zone
@@ -264,6 +264,8 @@ for name, model in models.items():
         "Later years held out": late_auc(by_time),
     }
 split = pd.DataFrame(split).T
+# The reading says the random split trains on more rows than the early years hold. Checked here.
+assert len(dev) * 4 / 5 > early.sum()
 
 store.put("early_year", EARLY)
 store.put("late_year", LATE)
@@ -277,6 +279,8 @@ split.round(3)
 # %% [markdown]
 # **Reading.** The trees score {{ch4.trees_random:.3f}} on rows held out at random and {{ch4.trees_time:.3f}} on later years.
 # The logistic regression moves less, from {{ch4.logit_random:.3f}} to {{ch4.logit_time:.3f}}, because a stiffer model has less room to memorise.
+#
+# The random split also trains on more rows than the years to {{ch4.early_year}} hold, so not all of the gap is memory.
 
 # %% [markdown]
 # <!-- pitfall: random_split -->
@@ -1155,7 +1159,7 @@ viz.exhibit(
 
 # %% [markdown]
 # **Reading.** The refit scores {{ch4.refit_auc:.3f}} out of fold, below the {{ch4.z_auc:.3f}} of the published weights, and it is ahead in {{ch4.refit_folds_ahead}} of the {{ch4.n_folds}} folds.
-# New weights do not mend Z.
+# New weights, fitted to the ratios as they stand, do not mend Z.
 #
 # Exhibit 5 shows how the two differ.
 # Altman's weights put {{ch4.published_retained:.0%}} of the pull on retained earnings and {{ch4.published_market:.0%}} on market value.
@@ -1163,7 +1167,9 @@ viz.exhibit(
 # The refit puts {{ch4.refit_market:.0%}} on market value and {{ch4.refit_retained:.0%}} on retained earnings, and it turns the sign of working capital and of sales.
 # It leans on one ratio where Altman spread the weight over two, and out of fold that serves it worse.
 #
-# That leaves the choice of ratios.
+# Two suspects are left: the scale the ratios are fitted on, and the choice of ratios.
+# The ladder takes the choice first, and the scale is tested after it.
+#
 # The next model takes all {{ch4.n_ratios}}, many of them near copies of each other, so it needs a **penalty** that shrinks the weights towards zero.
 #
 # The strength of the penalty is a setting, `C`, and a smaller `C` is a stronger penalty.
@@ -1294,7 +1300,49 @@ viz.exhibit(
 # The second rung is a step down: {{ch4.refit_step:.3f}}, with an interval from {{ch4.refit_step_low:.3f}} to {{ch4.refit_step_high:.3f}}, which answers Predict 2.
 #
 # The third rung is a step up of {{ch4.all_step:.3f}}, with an interval from {{ch4.all_step_low:.3f}} to {{ch4.all_step_high:.3f}}.
-# So the weights were never Z's problem, and the choice of ratios was.
+# That step brings two changes together: more ratios, and size and market value on a log scale.
+#
+# Q. Did the refit lose to Z for its weights, or for the scale of its ratios?
+
+
+# %%
+# The same five ratios, the same folds, and no penalty. Only the scale changes: each ratio is
+# mapped to its rank among the training rows, then onto a normal curve, before the fit.
+def rank_logistic(columns: list[str], C: float):
+    def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+        prepare, *_ = fit_prepare(train, columns)
+        model = make_pipeline(
+            QuantileTransformer(output_distribution="normal", random_state=SEED),
+            LogisticRegression(C=C, max_iter=5000),
+        )
+        model.fit(prepare(train), train["target"])
+        return model.predict_proba(prepare(valid))[:, 1]
+
+    return fit_predict
+
+
+rank_oof = walk_forward_oof(rank_logistic(FIVE, np.inf), dev, folds)
+RANK = "Five ratios, rank scale"
+rank_step = (
+    paired_table({"Altman Z": z_oof, RANK: rank_oof}, ["Altman Z", RANK], n_boot=N_BOOT)
+    .set_index("model")
+    .loc[RANK]
+)
+# The reading says the rank-scale refit is ahead of Z with an interval above zero. Checked here.
+assert rank_step["roc_auc_diff_lo"] > 0
+
+store.put("rank_auc", roc_auc_score(rank_oof["target"], rank_oof["pct"]))
+store.put("rank_step", rank_step["roc_auc_diff"])
+store.put("rank_step_low", rank_step["roc_auc_diff_lo"])
+store.put("rank_step_high", rank_step["roc_auc_diff_hi"])
+rank_step[["roc_auc_diff", "roc_auc_diff_lo", "roc_auc_diff_hi"]].round(3)
+
+# %% [markdown]
+# **Reading.** On a rank scale the same five ratios score {{ch4.rank_auc:.3f}}, ahead of Z by {{ch4.rank_step:.3f}}, with an interval from {{ch4.rank_step_low:.3f}} to {{ch4.rank_step_high:.3f}}.
+# So new weights can mend Z after all: the refit lost for its scale, since a few extreme ratios pull a straight-line fit on the raw values.
+#
+# The second rung stays as built, because the ladder was fixed before this check.
+# Chapter 6 fits its networks on this same rank scale, and the trees of Chapter 5 do not depend on scale at all.
 #
 # **Predict 3.** The crisis folds have more failures to find and less data to train on. Does the top rung rank better in them, or worse?
 #
@@ -1379,8 +1427,8 @@ oof_scores.groupby("model")["target"].agg(rows="size", positives="sum")
 # 2. Drawing companies in place of rows widens the interval of a score by {{ch4.wider:.0%}}, and a paired difference of {{ch4.diff:.3f}} between two scores is clear of zero where their own intervals overlap (Exhibit 2).
 # 3. Altman's zones are in the right order, and sharper for manufacturers: {{ch4.maker_distress:.1%}} of them fail in the distress zone, against {{ch4.other_distress:.1%}} of the rest (Exhibit 3).
 # 4. Z ranks with a ROC-AUC of {{ch4.z_auc:.3f}} and goes wrong at its weak end: its riskiest {{ch4.z_top:.0%}} carry a lift of only {{ch4.z_lift_top:.1f}} (Exhibit 4).
-# 5. New weights do not mend Z: the refit scores {{ch4.refit_auc:.3f}}, a step of {{ch4.refit_step:.3f}}, and it puts {{ch4.refit_market:.0%}} of its pull on one ratio (Exhibit 5, Exhibit 6).
-# 6. The choice of ratios does: all {{ch4.n_ratios}} ratios in a penalised logistic regression score {{ch4.all_auc:.3f}}, a step of {{ch4.all_step:.3f}} over the refit (Exhibit 6).
+# 5. New weights fitted to the raw ratios do not mend Z: the refit scores {{ch4.refit_auc:.3f}}, a step of {{ch4.refit_step:.3f}}, and it puts {{ch4.refit_market:.0%}} of its pull on one ratio (Exhibit 5, Exhibit 6). On a rank scale the same five ratios are {{ch4.rank_step:.3f}} ahead of Z, with an interval above zero, so the refit lost for its scale and not for having new weights.
+# 6. All {{ch4.n_ratios}} ratios in a penalised logistic regression score {{ch4.all_auc:.3f}}, a step of {{ch4.all_step:.3f}} over the refit, and that step brings more ratios and a log scale for size together (Exhibit 6).
 
 # %% [markdown]
 # # Your Turn

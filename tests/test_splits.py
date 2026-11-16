@@ -51,6 +51,7 @@ def test_folds_respect_the_embargo():
     for fold in folds:
         assert frame.loc[fold.train, "year"].max() + HORIZON < fold.year
         assert frame.loc[fold.train, "year"].max() == fold.year - 3
+        assert set(frame.loc[fold.train, "year"]) == set(range(1999, fold.year - 2))
         assert set(frame.loc[fold.valid, "year"]) == {fold.year}
 
 

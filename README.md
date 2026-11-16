@@ -85,11 +85,12 @@ On companies the model never saw in training, it scores 0.722.
 | 7 | Blend, trees and network | 0.771 | 0.821 | 0.785 to 0.855 | +0.007 (-0.002 to +0.015) | 0.152 | 37.5% | 7.5 |
 <!-- results:end -->
 
-Three things in that table deserve a plain statement.
+Four things in that table deserve a plain statement.
 
 - The chosen model is not the highest rung on the holdout. It was chosen on the walk-forward, before the holdout was opened, and it stays the chosen model.
 - The broad order holds on both samples and the fine order does not. With this many failures the holdout can separate models that are far apart, and it cannot settle a step of a hundredth.
 - Every rung scores higher on the holdout than on the walk-forward. The holdout holds no recession and the final models train on more years, so levels are not compared across the two samples.
+- Each step compares a rung with the one listed above it. The network and the blend are not built on history, so their steps are comparisons, not additions.
 
 ## A Look Inside
 
@@ -117,7 +118,7 @@ A cell stores it, and the build writes it into the sentence.
 - **The ranking.** Scores are ranked within each year, since a desk reviews a share of its names each year.
 - **The yardstick.** ROC-AUC, average precision, and the share of failures found at fixed review budgets, each with an interval from resampling whole companies. Models are compared by paired differences on the same resamples.
 - **The preprocessing.** Clipping bounds, fill values, and transforms are fitted on the training rows of each fold.
-- **The choice.** Rules are written before their results: the highest mean average precision over the folds, and the simpler model unless a more complex one beats it with an interval above zero.
+- **The choice.** The highest mean average precision over the folds, and the simpler model unless a more complex one beats it with an interval above zero. The first rule was written before its result. The second was added after the first named the blend, and before the holdout was opened; Chapter 6 says so.
 - **The holdout.** One function returns the holdout rows, and it refuses unless told to unseal. Only Chapter 7 does, in one cell, after the models, the choice, and the primary comparison were committed.
 - **The library.** The analysis code lives in `src/corp_default/` under test. Each function is typed in full in the chapter that teaches it, and a test keeps the two copies identical.
 
@@ -134,7 +135,7 @@ The sample:
 
 - These are small listed companies, not a universe of bond issuers.
 - Early failures are thin, and the dot-com bust is never a validation year.
-- Most holdout firm-years belong to companies the model trained on, and it ranks companies it never saw less well.
+- Most holdout firm-years belong to companies the model trained on, and it ranks companies it never saw less well. Those companies all first filed after the development years, so the gap may come from newer firms as much as from unfamiliar ones.
 - Market value is among the inputs, so this is a market and accounting model.
 - Clipping bounds come from the development years, and later, larger companies press against them.
 
@@ -149,6 +150,11 @@ The evidence:
 - The probability of default is an average over the cycle and will be wrong in most single years.
 
 Chapter 7 measures each of these where the file allows.
+
+The intervals:
+
+- They resample companies, not years, so they cannot show how much a score moves from one part of the cycle to another.
+- The tree model's walk-forward score comes from a search scored on the same folds it reports, so it flatters that model. Chapter 5 measures the effect on average precision, and the holdout is free of it.
 
 ## Quick Start
 

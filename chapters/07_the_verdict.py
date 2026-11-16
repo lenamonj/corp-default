@@ -952,6 +952,9 @@ ax.set_yticks(place, [f"{name} ({failures})" for name, failures in robust["failu
 ax.set_xlabel("ROC-AUC of the chosen model")
 ax.grid(axis="y", visible=False)
 
+# The reading says every company never seen first filed after the development years. Checked here.
+first_filed = features.groupby("company_name")["year"].min()
+assert (first_filed[sealed.loc[~seen, "company_name"]] > DEV_END).all()
 store.put("seen_share", seen.mean())
 store.put("unseen_auc", robust.loc["Companies never seen", "roc_auc"])
 store.put("unseen_low", robust.loc["Companies never seen", "low"])
@@ -995,6 +998,7 @@ robust.round(3)
 # Only {{ch7.unseen_failures}} failures stand behind it, so the interval is wide, but a new name is the case a desk cares about most.
 #
 # {{ch7.seen_share:.0%}} of holdout firm-years belong to companies from the development years, so the headline leans on familiar names.
+# Every company never seen first filed after {{ch7.dev_last}}, so the gap may come from newer firms as much as from unfamiliar ones.
 #
 # Without the {{ch7.n_unconfirmed}} unconfirmed failures the score is {{ch7.confirmed_auc:.3f}}, so they are not what holds the result up.
 # The model ranks failure within one year best, at {{ch7.one_year_auc:.3f}}, and failure within three years at {{ch7.three_year_auc:.3f}}.

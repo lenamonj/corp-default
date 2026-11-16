@@ -1174,6 +1174,8 @@ viz.exhibit(
 # A second test guards against complexity that buys nothing.
 # A blend must beat its simplest member with a paired interval above zero, or the simpler model stands.
 #
+# This second test was added after the first test's result was seen, and before the holdout was opened.
+#
 # Q. Which model do the two tests name?
 
 # %%
