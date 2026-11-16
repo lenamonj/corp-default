@@ -154,3 +154,15 @@ When the plan and the notebook disagree, the build stops with one sentence that 
 8. Colour carries one meaning each: signal is failure, steel is survival and place, and the model palette never appears on an outcome chart.
 
 Install the author tools once: `uv sync`, then `uv run python -m playwright install chromium`.
+
+## The landing page
+
+`uv run python -m tools.casebook.landing` draws the pictures of the repo's `README.md` into
+`assets/readme/landing/`, 830 px wide and saved at twice that, and the social card into
+`assets/readme/social.png`. Its components live in `landing.py` and `landing.css` and use the
+tokens and typefaces above.
+
+The same command fills every block of `README.md` that sits between a pair of markers,
+`<!-- name:start -->` and `<!-- name:end -->`. Those blocks hold every number on the page, and
+each is built from `results/` and the chapter plans. Run the command after any chapter is
+rebuilt. `tests/test_readme.py` fails when a block is stale.

@@ -1,0 +1,54 @@
+/* The landing page's components, 830 px wide. Tokens and typefaces come from design.css. */
+
+.cb-hero { position: relative; height: 440px; background: var(--carbon); color: var(--on-carbon); border: 1px solid var(--carbon-rule); }
+.cb-hero .cb-kicker { position: absolute; top: 32px; left: 40px; font: 500 11px/14px var(--mono); letter-spacing: .18em; color: var(--on-carbon-mute); }
+.cb-hero h1 { position: absolute; top: 60px; left: 40px; font: 800 46px/52px var(--display); color: var(--on-carbon); white-space: nowrap; }
+.cb-hero p { position: absolute; top: 122px; left: 40px; width: 700px; font: 400 18px/26px var(--sans); color: var(--on-carbon-soft); }
+.cb-hero .cb-mark { position: absolute; top: 186px; left: 0; right: 0; height: 170px; }
+.cb-hero .cb-facts { position: absolute; left: 40px; right: 40px; bottom: 0; height: 64px; display: flex; gap: 32px; align-items: center; border-top: 1px solid var(--carbon-rule); font: 500 12px/16px var(--mono); letter-spacing: .12em; color: var(--on-carbon-mute); }
+.cb-hero .cb-facts b { font: 700 16px/20px var(--mono); color: var(--on-carbon); }
+.cb-hero .cb-by { margin-left: auto; letter-spacing: .06em; font: 400 13px/16px var(--sans); color: var(--on-carbon-soft); }
+.cb-hero .cb-by b { font: 600 13px/16px var(--sans); letter-spacing: 0; }
+
+.cb-numbers { height: 128px; display: flex; background: var(--sheet); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.cb-numbers .cb-fact { flex: 1; min-width: 0; padding: 24px 0 0 24px; border-left: 1px solid var(--rule); display: flex; flex-direction: column; gap: 4px; }
+.cb-numbers .cb-fact:first-child { border-left: 0; }
+.cb-numbers .cb-n { font: 700 28px/32px var(--mono); color: var(--ink); }
+.cb-numbers .cb-what { font: 500 11px/14px var(--mono); letter-spacing: .14em; color: var(--signal); }
+.cb-numbers .cb-more { font: 400 13px/18px var(--sans); color: var(--slate); white-space: nowrap; }
+
+.cb-step { position: relative; height: 92px; display: flex; align-items: center; gap: 28px; padding: 0 40px 0 46px; background: var(--sheet); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.cb-step .cb-edge { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--signal); }
+.cb-step .cb-label { flex: none; width: 64px; font: 700 12px/16px var(--mono); letter-spacing: .14em; color: var(--slate); }
+.cb-step .cb-what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.cb-step .cb-title { font: 600 22px/28px var(--display); color: var(--ink); white-space: nowrap; }
+.cb-step .cb-line { font: 400 15px/20px var(--sans); color: var(--slate); white-space: nowrap; }
+.cb-step .cb-go { flex: none; }
+.cb-step .cb-go path { fill: none; stroke: var(--signal); stroke-width: 2.2; stroke-linecap: square; }
+
+.cb-plate.cb-land { padding: 28px 48px 20px; }
+.cb-chapters { width: 734px; }
+.cb-chapters .cb-row { position: relative; height: 52px; display: flex; align-items: center; gap: 20px; padding-left: 34px; }
+.cb-chapters .cb-row::before { content: ""; position: absolute; left: 6px; top: 0; bottom: 0; width: 1px; background: var(--ink); }
+.cb-chapters .cb-row:first-child::before { top: 26px; }
+.cb-chapters .cb-row:last-child::before { bottom: 26px; }
+.cb-chapters .cb-node { position: absolute; left: 2px; top: 22px; width: 9px; height: 9px; background: var(--sheet); border: 1.5px solid var(--ink); }
+.cb-chapters .cb-no { flex: none; width: 28px; font: 700 14px/18px var(--mono); color: var(--signal); }
+.cb-chapters .cb-title { flex: none; width: 150px; font: 600 18px/24px var(--display); color: var(--ink); white-space: nowrap; }
+.cb-chapters .cb-question { flex: 1; min-width: 0; font: 400 15px/20px var(--sans); color: var(--slate); white-space: nowrap; }
+
+.cb-inside { width: 734px; display: grid; grid-template-columns: repeat(3, 236px); gap: 16px 13px; }
+.cb-inside .cb-chart { display: flex; flex-direction: column; gap: 6px; }
+.cb-inside .cb-chart img { display: block; width: 236px; height: 168px; object-fit: cover; object-position: top left; border: 1px solid var(--rule); }
+.cb-inside .cb-label { font: 400 13px/18px var(--sans); color: var(--slate); white-space: nowrap; }
+.cb-inside .cb-label b { font: 700 11px/18px var(--mono); letter-spacing: .12em; color: var(--ink); margin-right: 8px; }
+
+.cb-evidence img { display: block; }
+
+.cb-social { position: relative; height: 320px; background: var(--carbon); color: var(--on-carbon); border: 1px solid var(--carbon-rule); }
+.cb-social .cb-kicker { position: absolute; top: 28px; left: 36px; font: 500 10px/14px var(--mono); letter-spacing: .18em; color: var(--on-carbon-mute); }
+.cb-social h1 { position: absolute; top: 52px; left: 36px; font: 800 36px/42px var(--display); white-space: nowrap; }
+.cb-social p { position: absolute; top: 102px; left: 36px; width: 560px; font: 400 15px/22px var(--sans); color: var(--on-carbon-soft); }
+.cb-social .cb-mark { position: absolute; top: 150px; left: 0; right: 0; height: 120px; }
+.cb-social .cb-by { position: absolute; left: 36px; bottom: 20px; font: 400 12px/16px var(--sans); color: var(--on-carbon-soft); }
+.cb-social .cb-by b { font-weight: 600; color: var(--on-carbon); }

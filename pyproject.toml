@@ -51,7 +51,7 @@ markers = [
 
 [tool.ruff]
 line-length = 100
-extend-exclude = ["notebooks", "corp_default.ipynb"]
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint.per-file-ignores]
 # A chapter is a notebook: imports follow prose, and a cell ends on the value it shows.

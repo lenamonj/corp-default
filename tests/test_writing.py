@@ -21,12 +21,6 @@ DASH = re.compile("[\u2013\u2014]")
 EMOJI = re.compile("[\U0001f000-\U0001faff\u2600-\u27bf\ufe0f\u200d]")
 HISTORY = ("previous version", "old label", "used to", "no longer")
 LINK = re.compile(r"https?://[^\s)>\]\"'`]+")
-# The published README still says "no longer" once (review finding P5). Phase 11 rewrites the page.
-PUBLISHED_README = pytest.param(
-    REPO / "README.md",
-    id="README.md",
-    marks=pytest.mark.xfail(strict=True, reason="rewritten in Phase 11"),
-)
 
 
 def _id(path: Path) -> str:
@@ -65,7 +59,7 @@ def test_no_dash_and_no_emoji(path):
     assert dashes_and_emojis(path.read_text(encoding="utf-8")) == []
 
 
-@pytest.mark.parametrize("path", [*CHAPTER_FILES, PUBLISHED_README], ids=_id)
+@pytest.mark.parametrize("path", [*CHAPTER_FILES, REPO / "README.md"], ids=_id)
 def test_no_version_history(path):
     assert history(path.read_text(encoding="utf-8")) == []
 

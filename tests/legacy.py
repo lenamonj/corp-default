@@ -1,4 +1,4 @@
-"""The published notebook's functions, copied from corp_default.ipynb cells 6, 12, 20, 23, and 36.
+"""The functions of the single notebook this casebook replaced (cells 6, 12, 20, 23, and 36 of it).
 
 The reference the library is checked against. Never imported by the library.
 Only the names carry a legacy_ prefix; the bodies are as published.
