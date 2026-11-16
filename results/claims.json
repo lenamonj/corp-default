@@ -1,0 +1,15 @@
+{
+  "capture_5": "35.6%",
+  "capture_5_interval": "27.0% to 43.6%",
+  "chosen_model": "All ratios, trees",
+  "classic_auc": "0.716",
+  "holdout_auc": "0.815",
+  "holdout_auc_interval": "0.779 to 0.850",
+  "holdout_failures": "160",
+  "holdout_rows": "9,954",
+  "lift_5": "7.1",
+  "primary_step": "+0.099",
+  "primary_step_interval": "+0.063 to +0.136",
+  "unseen_auc": "0.722",
+  "walk_forward_auc": "0.776"
+}
