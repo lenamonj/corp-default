@@ -79,6 +79,12 @@ LABELS = {
     "sales": "Sales",
     "assets": "Total assets",
 }
+# Shorter names for the title of a narrow panel.
+SHORT_LABELS = {
+    "ffo_to_liabilities": "FFO / liabilities",
+    "current_liabilities_to_liabilities": "Current / total liabilities",
+    "market_to_book_assets": "Market-to-book, assets",
+}
 _LAG_WORDS = {"1": "one year", "2": "two years"}
 
 EXHIBIT_WIDTH_IN = 8.0  # 1200 px at 150 dpi
@@ -244,8 +250,13 @@ def exhibit(
         fig.savefig(GALLERY / f"{save_as}.png")
 
 
-def label(name: str) -> str:
-    """The name a chart shows for a column: `d2_roa` is "Return on assets, 2-year change"."""
+def label(name: str, short: bool = False) -> str:
+    """The name a chart shows for a column: `d2_roa` is "Return on assets, 2-year change".
+
+    short gives the name that fits over a narrow panel.
+    """
+    if short and name in SHORT_LABELS:
+        return SHORT_LABELS[name]
     if name in LABELS:
         return LABELS[name]
     if match := re.fullmatch(r"([dg])([12])_(.+)", name):

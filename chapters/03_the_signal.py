@@ -13,7 +13,7 @@
 # ## The Question
 #
 # Chapter 2 put a date on each failure and a label on each firm-year.
-# The accounts are still raw: {{ch3.raw_items}} dollar items a year.
+# The accounts are still raw: {{ch3.raw_items}} accounting items a year.
 #
 # A lender reads ratios, and reads them over several years.
 # Where in the accounts does failure show, and how early?
@@ -23,7 +23,7 @@
 #
 # By the end you can:
 #
-# - turn the dollar items into ratios, family by family;
+# - turn the accounting items into ratios, family by family;
 # - follow failed companies through the years before their last filing;
 # - read the failure rate along a ratio, with an honest interval on it;
 # - explain why the largest losses are not the riskiest accounts;
@@ -52,7 +52,7 @@
 # The chapter reads the labelled panel of Chapter 2.
 # Its outcome columns, `target`, `failed`, `last_year`, and `years_to_final`, are described there, and none of them is ever an input to a model.
 #
-# From the dollar items the chapter builds {{ch3.n_ratios}} **ratios**, in {{ch3.n_families}} families.
+# From the accounting items the chapter builds {{ch3.n_ratios}} **ratios**, in {{ch3.n_families}} families.
 #
 # | Family | Column | What it is |
 # | --- | --- | --- |
@@ -74,7 +74,7 @@
 # | | `working_capital_to_assets` | Current assets less current liabilities, over total assets |
 # | | `current_assets_to_assets` | Current assets over total assets |
 # | | `current_liabilities_to_liabilities` | Current liabilities over total liabilities |
-# | Coverage | `ffo_to_liabilities` | Net income plus depreciation and amortisation, over total liabilities |
+# | Coverage | `ffo_to_liabilities` | Funds from operations (FFO), net income plus depreciation and amortisation, over total liabilities |
 # | Activity | `asset_turnover` | Net sales over total assets |
 # | Market | `mve_to_liabilities` | Market value of equity over total liabilities |
 # | | `market_to_book_assets` | Market value of equity plus total liabilities, over total assets |
@@ -102,7 +102,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.lines import Line2D
-from matplotlib.ticker import PercentFormatter
+from matplotlib.ticker import MaxNLocator, PercentFormatter
 from scipy.cluster import hierarchy
 from scipy.spatial.distance import squareform
 from scipy.stats import gaussian_kde, ks_2samp, rankdata
@@ -137,7 +137,7 @@ panel.head()
 
 # %% [markdown]
 # **Reading.** These are the file's rows with the label of Chapter 2 attached.
-# The dollar items sit in the middle, and the outcome columns are at the right.
+# The accounting items sit in the middle, and the outcome columns are at the right.
 #
 # Q. How large is the table, and what does each column hold?
 
@@ -176,15 +176,15 @@ panel[["year", "target", "last_year", "years_to_final"]].describe().T.round(3)
 # Every result below that involves the outcome uses fiscal years up to {{ch3.dev_end}} only, the **development rows**.
 # That is {{ch3.dev_rows:,}} rows with {{ch3.dev_positives}} positives, a base rate of {{ch3.dev_base:.2%}}, and the later years stay out of sight until Chapter 7.
 #
-# **Next, from dollars to ratios.**
+# **Next, from amounts to ratios.**
 
 # %% [markdown]
-# # From Dollars to Ratios
+# # From Amounts to Ratios
 #
-# A dollar item mostly says how big a company is.
+# A accounting item mostly says how big a company is.
 # The **rank correlation** shows it: the correlation of two columns after each value is replaced by its rank.
 #
-# Q. How closely does each dollar item follow total assets?
+# Q. How closely does each accounting item follow total assets?
 
 # %%
 with_size = dev_panel[RAW_ITEMS].corrwith(dev_panel["total_assets"], method="spearman")
@@ -201,7 +201,7 @@ with_size.round(2).to_frame("rank correlation with total assets")
 # **Reading.** The median item has a rank correlation of {{ch3.size_corr_median:.2f}} with total assets, and total liabilities {{ch3.liabilities_size_corr:.2f}}.
 # A large company owes a lot because it is large.
 #
-# As a score for failure, total liabilities in dollars have a ROC-AUC of {{ch3.liabilities_dollar_auc:.2f}}.
+# As a score for failure, total liabilities as an amount have a ROC-AUC of {{ch3.liabilities_dollar_auc:.2f}}.
 # That is the chance that a positive row ranks above a negative one, and a coin scores a half.
 #
 # A ratio divides one item by another, so the size cancels and the shape of the accounts is left.
@@ -349,7 +349,8 @@ def ecdf(values: pd.Series) -> tuple[np.ndarray, np.ndarray]:
 
 
 # The largest distance between the two curves of a ratio.
-gaps = pd.Series({name: ks_2samp(positive[name], negative[name]).statistic for name in SHOWN})
+tests = {name: ks_2samp(positive[name], negative[name]) for name in SHOWN}
+gaps = pd.Series({name: test.statistic for name, test in tests.items()})
 halfway = positive["liabilities_to_assets"].median()
 above = dev.loc[dev["liabilities_to_assets"] > halfway, "target"]
 
@@ -367,8 +368,13 @@ for ax, (name, log_ticks) in zip(axes.flat, SHOWN.items()):
     if log_ticks:
         viz.log_axis(ax)
         ax.set_xticks(log_ticks)
+    else:
+        ax.xaxis.set_major_locator(MaxNLocator(4))
+    at = tests[name].statistic_location
+    ax.vlines(at, (positive[name] <= at).mean(), (negative[name] <= at).mean(), color=viz.INK,
+              linewidth=1.6, zorder=4)  # fmt: skip
     ax.set_xlim(*dev[name].quantile(FRAME))
-    ax.set_title(name)
+    ax.set_title(viz.label(name, short=True) + (" (log)" if log_ticks else ""))
     ax.text(0.96, 0.07, f"gap {gaps[name]:.2f}", transform=ax.transAxes, ha="right", size=8.5,
             color=viz.SLATE)  # fmt: skip
 axes[0, 0].set_ylim(0, 1)
@@ -376,14 +382,15 @@ axes[0, 0].yaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
 axes[0, 1].legend(loc="upper left")
 viz.exhibit(
     fig,
-    f"The widest gap between the outcomes is {gaps.max():.2f}, on {gaps.idxmax()}",
-    "Share of rows at or below each value. Gap: the largest distance between the two curves.",
+    f"No ratio separates the outcomes: the widest gap between the curves is {gaps.max():.2f}",
+    "Share of rows at or below each value. Black bar: the largest distance between the two curves.",
     DEV_SOURCE,
 )
 
 # %% [markdown]
-# **Reading.** In Exhibit 1 the red curve sits apart from the blue one in every panel, and never far apart.
-# The widest gap is {{ch3.ecdf_gap:.2f}}, on `{{ch3.ecdf_gap_name}}`.
+# **Reading.** In Exhibit 1 the two curves part in every panel, and never by much.
+# The black bar in each panel marks where they are furthest apart.
+# The widest of those gaps is {{ch3.ecdf_gap:.2f}}, on `{{ch3.ecdf_gap_name}}`.
 #
 # Half of the positive rows have liabilities above {{ch3.leverage_pos_median:.0%}} of assets, against {{ch3.leverage_neg_median:.0%}} for the negative rows.
 # But above that level, negative rows still outnumber positive ones by {{ch3.neg_per_pos_above:.0f}} to one.
@@ -440,7 +447,13 @@ PATH_LEGEND = [
 ]
 
 
-def draw_paths(paths: pd.DataFrame, others: pd.DataFrame, columns: list[str], nrows: int):
+def draw_paths(
+    paths: pd.DataFrame,
+    others: pd.DataFrame,
+    columns: list[str],
+    nrows: int,
+    titles: dict | None = None,
+):
     """Median and middle half of each column along the path, over the same for the other companies."""
     along = paths.groupby("years_to_final")[columns].quantile(QUARTILES).unstack()
     level = others[columns].quantile(QUARTILES)
@@ -452,12 +465,15 @@ def draw_paths(paths: pd.DataFrame, others: pd.DataFrame, columns: list[str], nr
         ax.axhspan(level.loc[0.25, name], level.loc[0.75, name], color=viz.SURVIVED, alpha=0.1,
                    linewidth=0)  # fmt: skip
         ax.axhline(level.loc[0.5, name], color=viz.SURVIVED, linewidth=1.4, linestyle=(0, (4, 3)))
-        ax.fill_between(-low.index, low, high, color=viz.FAILED, alpha=0.16, linewidth=0)
+        # The failed band is an outline with a faint fill, so the two bands stay apart where they cross.
+        ax.fill_between(-low.index, low, high, color=viz.FAILED, alpha=0.07, linewidth=0)
+        for edge in (low, high):
+            ax.plot(-edge.index, edge, color=viz.FAILED, linewidth=0.8, alpha=0.55)
         ax.plot(-middle.index, middle, color=viz.FAILED, marker="o", markersize=3.5, linewidth=1.6)
-        ax.set_title(name)
+        ax.set_title(titles[name] if titles else viz.label(name, short=True))
         ax.set_xticks(range(-YEARS_BACK, 1, 2))
-    for ax in axes.flat[-(len(columns) // nrows) :]:
-        ax.set_xlabel("Years to the last filing")
+    # One label serves the row: every panel shares the axis.
+    axes.flat[-(len(columns) // nrows)].set_xlabel("Years to the last filing", loc="left")
     axes.flat[0].legend(handles=PATH_LEGEND, loc="upper left")
     return fig, along.xs(0.5, axis=1, level=1), level
 
@@ -612,7 +628,7 @@ for ax, name in zip(axes.flat, STUDY):
     ax.axhline(base, color=viz.MIST, linewidth=1, linestyle=(0, (4, 3)))
     ax.errorbar(table.index, table["rate"], yerr=bars(table), fmt="o", color=viz.FAILED,
                 markersize=3.5, linewidth=1)  # fmt: skip
-    ax.set_title(name)
+    ax.set_title(viz.label(name, short=True))
     if name in turning:
         ax.text(0.96, 0.9, "TURNS", transform=ax.transAxes, ha="right", size=8, weight=600)
     ax.set_xticks([1, 4, 7, 10])
@@ -624,7 +640,7 @@ for ax in axes[-1]:
 viz.exhibit(
     fig,
     f"The most levered fifth fails at {top_rate:.1%}, the rest at {rest_rate:.1%}",
-    "Two-year failure rate by decile of each ratio, 95% Wilson intervals. Dashed: the base rate.",
+    "Rate by decile, 95% Wilson intervals. Dashed: base rate. TURNS: the curve changes direction.",
     DEV_SOURCE,
 )
 
@@ -718,13 +734,14 @@ ax.set_yticks(
     ],
 )
 ax.xaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
+ax.set_xlim(0, by_division["high"].max() * 1.06)
 ax.grid(axis="y", visible=False)
 ax.set_xlabel("Two-year failure rate")
 viz.exhibit(
     fig,
     f"By division the failure rate runs from {by_division['rate'].min():.1%} "
     f"to {by_division['rate'].max():.1%}",
-    "Rate by SIC division, rows in brackets, 95% Wilson intervals. Dashed: the base rate.",
+    "Rate by SIC division, with its rows. 95% Wilson intervals. Dashed: the base rate.",
     f"{DEV_SOURCE}; SIC divisions from the authors' later copy",
 )
 
@@ -740,7 +757,7 @@ viz.exhibit(
 # **Next, the weak end of the scale.**
 
 # %% [markdown]
-# # Why the Worst-Looking Firms Are Not the Riskiest
+# # Why the Worst-Looking Companies Are Not the Riskiest
 #
 # In Exhibit 3 the lowest decile of `roa` fails no more often than the third.
 # The companies with the largest losses are not the ones that fail most.
@@ -781,7 +798,7 @@ fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 3.8))
 ax.axhline(base, color=viz.MIST, linewidth=1, linestyle=(0, (4, 3)))
 for table, label, color, marker, nudge in (
     (with_debt, "With long-term debt", viz.INK, "o", -0.1),
-    (debt_free, "No long-term debt", viz.CENSORED, "s", 0.1),
+    (debt_free, "No long-term debt", viz.ACCENT, "s", 0.1),
 ):
     ax.errorbar(table.index + nudge, table["rate"], yerr=bars(table), fmt=f"{marker}-",
                 color=color, markersize=5, linewidth=1.2, label=label)  # fmt: skip
@@ -794,9 +811,9 @@ ax.set_ylabel("Two-year failure rate")
 ax.legend(loc="upper right")
 viz.exhibit(
     fig,
-    f"Lowest decile: {with_debt.loc[1, 'rate']:.1%} fail with long-term debt, "
+    f"Deepest losses: {with_debt.loc[1, 'rate']:.1%} fail with long-term debt, "
     f"{debt_free.loc[1, 'rate']:.1%} without",
-    "Rate by decile of roa, split by long-term debt. 95% Wilson intervals. Dashed: base rate.",
+    "Failure rate by decile of return on assets. 95% Wilson intervals. Dashed: base rate.",
     DEV_SOURCE,
 )
 
@@ -912,16 +929,16 @@ ax.scatter(alone["auc"][~high_is_risky], place[~high_is_risky], s=34, facecolor=
 edge = alone["high"].max() + 0.012
 for y, name in zip(place, alone.index):
     ax.text(edge, y, FAMILY_OF[name], va="center", size=8, color=viz.SLATE)
-ax.set_yticks(place, alone.index)
+ax.set_yticks(place, [viz.label(name) for name in alone.index])
 ax.set_xlim(0.44, edge + 0.07)
 ax.set_ylim(-0.7, len(alone) - 0.3)
 ax.grid(axis="y", visible=False)
 ax.set_xlabel("ROC-AUC of the ratio alone")
-ax.legend(loc="lower right", bbox_to_anchor=(0.77, 0.0))
+ax.legend(loc="lower left", bbox_to_anchor=(0, 1), ncols=2, borderaxespad=0.2)
 viz.exhibit(
     fig,
-    f"No ratio alone scores above {alone['auc'].max():.2f}",
-    "ROC-AUC of each ratio alone, turned so that high is risky. 95% bootstrap intervals.",
+    f"The best ratio alone has a ROC-AUC of {alone['auc'].max():.3f}",
+    "Each ratio alone, turned so that high is risky. 95% bootstrap intervals. Right: its family.",
     DEV_SOURCE,
 )
 
@@ -930,7 +947,7 @@ viz.exhibit(
 # The best, `{{ch3.best_name}}`, scores {{ch3.best_auc:.3f}} on the rows where it exists, and `{{ch3.best_every_row_name}}` scores {{ch3.best_every_row_auc:.3f}} on every row.
 #
 # `liabilities_to_assets` scores {{ch3.leverage_auc:.2f}}.
-# In dollars, total liabilities scored {{ch3.liabilities_dollar_auc:.2f}}: dividing by assets made the signal.
+# As an amount, total liabilities scored {{ch3.liabilities_dollar_auc:.2f}}: dividing by assets made the signal.
 #
 # The intervals are wide, and most neighbours in the ranking cannot be told apart.
 #
@@ -940,7 +957,7 @@ viz.exhibit(
 # **Next, how much the ratios repeat each other.**
 
 # %% [markdown]
-# # Redundancy
+# # Ratios That Repeat
 #
 # Many of the ratios share a numerator or a denominator, so they repeat each other.
 # The rank correlation of each pair measures how much.
@@ -967,20 +984,18 @@ store.put("twin_level", TWIN)
 store.put("twin_pairs", int((strength >= TWIN).sum().sum() / 2))
 store.put("equity_leverage_corr", corr.loc["book_equity_to_assets", "liabilities_to_assets"])
 
-diverging = LinearSegmentedColormap.from_list(
-    "diverging", [viz.MODEL_COLORS["trees"], viz.SHEET, viz.SURVIVED]
-)
+diverging = LinearSegmentedColormap.from_list("diverging", ["#7A5C3E", viz.SHEET, viz.SURVIVED])
 fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 5.4))
 image = ax.imshow(corr.to_numpy(), cmap=diverging, vmin=-1, vmax=1, aspect="auto")
-ax.set_xticks(range(len(corr)), [FAMILY_OF[name] for name in corr.columns], rotation=90)
-ax.set_yticks(range(len(corr)), corr.index)
+ax.set_xticks([])
+ax.set_yticks(range(len(corr)), [f"{viz.label(name)} ({FAMILY_OF[name]})" for name in corr.index])
 ax.grid(visible=False)
 ax.tick_params(length=0)
 fig.colorbar(image, ax=ax, shrink=0.7, pad=0.02, label="Rank correlation")
 viz.exhibit(
     fig,
-    f"{same_family} of {len(corr)} ratios sit closest to a ratio of their own family",
-    "Rank correlation of each pair, in clustered order. Rows name the ratio, columns its family.",
+    f"Ratios repeat their own family: {same_family} of {len(corr)} sit closest to a relative",
+    "Rank correlation of each pair. Rows and columns share one clustered order. Family in brackets.",
     DEV_SOURCE,
 )
 for axis in fig.axes:
@@ -1050,11 +1065,12 @@ image = ax.hexbin(
 )
 ax.axhline(0, color=viz.INK, linewidth=0.8)
 ax.axvline(cut, color=viz.INK, linewidth=0.8, linestyle=(0, (4, 3)))
-ax.text(cut + 0.015, 0.27, "top fifth by leverage", size=8.5)
-ax.text(1.19, 0.01, "profit", size=8.5, ha="right")
-ax.text(1.19, -0.035, "loss", size=8.5, ha="right")
-ax.set_xlim(*MAP_FRAME["liabilities_to_assets"])
-ax.set_ylim(*MAP_FRAME["roa"])
+ax.text(cut + 0.015, 0.225, "top fifth by leverage", size=8.5)
+ax.text(1.04, 0.008, "profit", size=8.5, ha="right")
+ax.text(1.04, -0.026, "loss", size=8.5, ha="right")
+# The axes stop where the hexagons do; the frame behind them is unchanged.
+ax.set_xlim(0, 1.05)
+ax.set_ylim(-0.2, 0.25)
 ax.grid(visible=False)
 ax.set_xlabel("Total liabilities over total assets")
 ax.set_ylabel("Net income over total assets")
@@ -1084,7 +1100,7 @@ viz.exhibit(
 # **Next, what a single year of ratios cannot show.**
 
 # %% [markdown]
-# # History Matters
+# # What Changed Since Last Year
 #
 # Exhibit 2 showed the ratios moving for years before a failure.
 # A row of ratios is one year, and the movement is not in it.
@@ -1196,7 +1212,15 @@ wide.loc[near_gap, [*KEYS, "roa", "d1_roa", "d2_roa", "years_observed"]].round(3
 CHANGES = ["d1_liabilities_to_assets", "d1_roa", "g1_assets", "g1_market_cap"]
 
 change_paths, change_others = study_groups(wide)
-fig, changes, change_level = draw_paths(change_paths, change_others, CHANGES, nrows=1)
+CHANGE_TITLES = {
+    "d1_liabilities_to_assets": "Leverage",
+    "d1_roa": "Return on assets",
+    "g1_assets": "Total assets",
+    "g1_market_cap": "Market value",
+}
+fig, changes, change_level = draw_paths(
+    change_paths, change_others, CHANGES, nrows=1, titles=CHANGE_TITLES
+)
 
 
 def as_share(log_growth: float) -> float:
@@ -1224,7 +1248,7 @@ viz.exhibit(
     fig,
     f"Market value falls {-as_share(changes.loc[0, 'g1_market_cap']):.0%} "
     "in the median failed company's last year",
-    "One-year changes by year: failed companies in red, all other companies in blue.",
+    "One-year change in each, median and middle half: failed companies in red, all others in blue.",
     DEV_SOURCE,
 )
 
@@ -1305,16 +1329,16 @@ place = np.arange(len(drift))
 ax.barh(place, drift["2014 to 2016"], height=0.6, color=viz.INK, label="2014 to 2016")
 ax.scatter(drift["2007 to 2011"], place, s=30, facecolor=viz.SHEET, edgecolor=viz.SLATE,
            linewidth=1.3, zorder=3, label="2007 to 2011")  # fmt: skip
-ax.set_yticks(place, drift.index)
+ax.set_yticks(place, [viz.label(name) for name in drift.index])
 ax.set_ylim(-0.7, len(drift) - 0.3)
 ax.grid(axis="y", visible=False)
-ax.set_xlabel("Population stability index against 1999 to 2006")
+ax.set_xlabel("PSI against 1999 to 2006")
 ax.legend(loc="lower right")
 viz.exhibit(
     fig,
     f"Size drifts most: a PSI of {drift['2014 to 2016'].max():.2f}, "
-    f"against a median of {drift['2014 to 2016'].median():.2f}",
-    "PSI of each ratio against 1999 to 2006. Bars: 2014 to 2016. Circles: 2007 to 2011.",
+    f"against {drift['2014 to 2016'].median():.2f} for the median ratio",
+    "Population stability index (PSI) against 1999 to 2006. Bars: 2014 to 2016. Circles: 2007 to 2011.",
     f"{SOURCE}; ratios only, no outcome after {DEV_END}",
 )
 
@@ -1324,37 +1348,39 @@ viz.exhibit(
 #
 # Of the {{ch3.n_continuous}} bars, {{ch3.psi_longer}} reach past their circle: the drift keeps going the same way as the years pass.
 #
-# The dollar items drift as size does, with a median index of {{ch3.psi_dollar_median:.3f}}.
-# That is one more reason to model ratios and not dollars.
+# The accounting items drift as size does, with a median index of {{ch3.psi_dollar_median:.3f}}.
+# That is one more reason to model ratios and not amounts.
 #
 # Q. What does the drift look like in the four ratios that move most?
 
 # %%
-ERA_COLORS = ["#9DB4CC", "#5F86AE", "#173F66"]  # one hue, light to dark: the eras are in order
+ERA_COLORS = viz.COHORTS  # one hue, light to dark: the eras are in order
 moved = list(drift.index[-4:][::-1])
 
 fig, axes = plt.subplots(2, 2, figsize=(viz.EXHIBIT_WIDTH_IN, 4.6), sharey=True)
 for ax, name in zip(axes.flat, moved):
-    low, high = first[name].quantile([0.02, 0.98])
+    low, high = first[name].quantile([0.02, 0.95])
     grid = np.linspace(low, high, 200)
     framed = {era: rows.loc[rows[name].between(low, high), name] for era, rows in by_era.items()}
     density = {era: gaussian_kde(values)(grid) for era, values in framed.items()}
     tallest = max(curve.max() for curve in density.values())
     for step, (era, color) in enumerate(zip(by_era, ERA_COLORS)):
-        ridge = step + 1.5 * density[era] / tallest
-        ax.fill_between(grid, step, ridge, color=color, alpha=0.8, linewidth=0, zorder=3 - step)
+        ridge = (
+            step + 0.92 * density[era] / tallest
+        )  # under one step tall, so no ridge hides another
+        ax.fill_between(grid, step, ridge, color=color, linewidth=0, zorder=3 - step)
         ax.plot(grid, ridge, color=viz.SHEET, linewidth=0.8, zorder=3 - step)
         ax.vlines(by_era[era][name].median(), step, step + 0.45, color=viz.INK, linewidth=1.2,
                   zorder=4)  # fmt: skip
-    ax.set_title(name)
+    ax.set_title(viz.label(name))
     ax.grid(axis="y", visible=False)
 axes[0, 0].set_yticks(range(len(by_era)), list(by_era))
-axes[0, 0].set_ylim(-0.1, len(by_era) + 0.7)
+axes[0, 0].set_ylim(-0.1, len(by_era) + 0.05)
 size_multiple = float(np.exp(last["log_assets"].median() - first["log_assets"].median()))
 store.put("size_multiple", size_multiple)
 viz.exhibit(
     fig,
-    f"The median company's assets are {size_multiple:.1f} times larger in 2014 to 2016",
+    f"Median assets are {size_multiple:.1f} times larger in 2014 to 2016 than in 1999 to 2006",
     "The four ratios that drift most, by era. Each ridge is a distribution, with a tick at its median.",
     f"{SOURCE}; ratios only, no outcome after {DEV_END}",
 )
