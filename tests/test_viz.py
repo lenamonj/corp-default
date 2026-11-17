@@ -198,3 +198,15 @@ def test_every_model_input_and_item_has_a_name_a_reader_can_say():
     assert viz.label("d2_liabilities_to_assets") == "Liabilities / assets, 2-year change"
     assert viz.label("g1_market_cap") == "Market value, 1-year growth"
     assert viz.label("loss_2y_ago") == "Loss two years ago"
+
+
+def test_words_on_an_axis_take_the_text_face_and_numbers_the_mono_face():
+    viz.use_house_style()
+    fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 3))
+    ax.barh(["Manufacturing", "Retail trade"], [1, 2])
+    viz.exhibit(fig, "Words and numbers", "A note.")
+    fig.canvas.draw()
+    words = {label.get_fontfamily()[0] for label in ax.get_yticklabels()}
+    numbers = {label.get_fontfamily()[0] for label in ax.get_xticklabels()}
+    assert words == {matplotlib.rcParams["font.family"][0]}
+    assert numbers.isdisjoint(words)

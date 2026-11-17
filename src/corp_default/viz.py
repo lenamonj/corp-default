@@ -38,6 +38,9 @@ MODEL_COLORS = {
 # Two groups that are neither outcomes nor models: ink for the subject, this hue for the other.
 ACCENT = "#0B8A6F"
 
+# Groups in time order, such as cohorts or eras: one hue, and the later the darker.
+COHORTS = ("#A9BFD6", "#5F86AE", "#1F4E7A")
+
 # What a chart calls each column. Code names stay in the code and in the data dictionaries.
 LABELS = {
     "liabilities_to_assets": "Liabilities / assets",
@@ -180,9 +183,18 @@ def exhibit(
     global _count
     _count += 1
     fig.set_label(f"Exhibit {_count}: {title}. {note}")
-    # Tick labels take the mono face first, so the layout is fitted to the labels as drawn.
+    # Tick labels take their face first, so the layout is fitted to the labels as drawn: numbers
+    # in the mono face, and an axis of words in the text face.
     for ax in fig.axes:
-        ax.tick_params(labelfontfamily=_fonts["mono"], labelsize=8.5)
+        for which, axis in (("x", ax.xaxis), ("y", ax.yaxis)):
+            words = any(
+                re.search(r"[A-Za-z]{3}", tick.get_text()) for tick in axis.get_ticklabels()
+            )
+            ax.tick_params(
+                axis=which,
+                labelfontfamily=_fonts["sans"] if words else _fonts["mono"],
+                labelsize=9.5 if words else 8.5,
+            )
     # Let a constrained layout set the margins around tick labels, freeze it, then grow the figure
     # and move every axes down into the new room.
     if fig.get_layout_engine() is None:

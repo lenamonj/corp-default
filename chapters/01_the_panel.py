@@ -90,7 +90,7 @@
 # | `division` | The **SIC division**, a letter from A to J |
 # | `major_group` | The **major group**, a two-digit code inside the division |
 #
-# Q. What does the chapter need before it can look at the file?
+# Q. What gets imported and loaded?
 
 # %%
 import textwrap
@@ -366,7 +366,7 @@ viz.exhibit(
 )
 
 # %% [markdown]
-# **Reading.** Exhibit 1 falls in almost every year.
+# **Reading.** The count in Exhibit 1 falls in almost every year.
 # By {{ch1.last_year}} there are {{ch1.companies_last_year:,}} companies, {{ch1.shrink:.0%}} fewer than at the start.
 #
 # A falling count means more companies leave than join.
@@ -402,7 +402,7 @@ ax.bar(
     bottom=-exits["failed"],
     width=0.72,
     color=viz.CENSORED,
-    label="Left for another reason",
+    label="Left another way",
 )
 ax.axhline(0, color=viz.INK, linewidth=0.8)
 ax.set_xticks(range(first_year, last_year + 1, 3))
@@ -425,7 +425,7 @@ viz.exhibit(
 # The file does not say why the others leave.
 # A merger, a buyout, and a delisting all look the same here.
 #
-# Only {{ch1.reporting:,}} companies are still filing in {{ch1.last_year}}.
+# Only {{ch1.reporting:,}} companies without the flag are still filing in {{ch1.last_year}}.
 #
 # Q. What does one company's history look like?
 
@@ -443,10 +443,10 @@ runs = rows.assign(run=starts_run.cumsum()).groupby(["row", "run"])["year"].agg(
 runs = runs.reset_index()
 
 fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 5.6))
-ax.hlines(runs["row"], runs["min"] - 0.4, runs["max"] + 0.4, color=viz.MIST, linewidth=0.7)
+ax.hlines(runs["row"], runs["min"] - 0.4, runs["max"] + 0.4, color="#C3C6CB", linewidth=0.7)
 endings = [
     ("reporting", viz.SURVIVED, f"Still filing in {last_year}"),
-    ("left", viz.CENSORED, "Left for another reason"),
+    ("left", viz.CENSORED, "Left another way"),
     ("failed", viz.FAILED, "Failed"),
 ]
 for event, color, label in endings:
@@ -458,10 +458,13 @@ ax.set_ylim(len(sample), -1)
 ax.set_yticks([])
 ax.grid(axis="y", visible=False)
 ax.set_ylabel(f"{len(sample)} companies, by first and last year")
-ax.legend(loc="lower left", ncols=3)
+ax.legend(loc="lower left", bbox_to_anchor=(0, 1), ncols=3, borderaxespad=0.2)
+from_start = (events["entry_year"] == first_year).mean()
+# The title says most companies leave before the last year. Checked here.
+assert (events["event"] != "reporting").mean() > 0.5
 viz.exhibit(
     fig,
-    "Most histories start at the file's first year and end early",
+    f"The file opens with {from_start:.0%} of its companies already listed, and most leave before {last_year}",
     "One line per company, drawn for each year it files. The dot marks how its history ends.",
     f"{SOURCE}; a random sample of {len(sample)} companies",
     save_as="ch1",
@@ -471,7 +474,7 @@ viz.exhibit(
 # **Reading.** Most lines in Exhibit 3 begin at the left edge, in {{ch1.first_year}}, and most end with a grey dot long before the right edge.
 # A few lines have a break in them, where a company skips a year or more.
 #
-# **Next, those late arrivals, short histories, and breaks, measured.**
+# **Next, the late arrivals, short histories, and breaks are measured.**
 
 # %% [markdown]
 # # Late Arrivals and Gaps
@@ -527,9 +530,9 @@ spans.drop(columns="failed").describe().loc[["min", "50%", "max"]].T.astype(int)
 # %%
 cohorts = [
     (f"In the file from {first_year}", spans["first_year"] == first_year, viz.INK),
-    ("Joined 2000 to 2005", spans["first_year"].between(2000, 2005), "#173F66"),
-    ("Joined 2006 to 2011", spans["first_year"].between(2006, 2011), "#5F86AE"),
-    (f"Joined 2012 to {last_year}", spans["first_year"] >= 2012, "#9DB4CC"),
+    ("Joined 2000 to 2004", spans["first_year"].between(2000, 2004), viz.COHORTS[0]),
+    ("Joined 2005 to 2009", spans["first_year"].between(2005, 2009), viz.COHORTS[1]),
+    (f"Joined 2010 to {last_year}", spans["first_year"] >= 2010, viz.COHORTS[2]),
 ]
 
 median_first = spans.loc[truncated, "n_years"].median()
@@ -537,7 +540,8 @@ store.put("median_first", median_first)
 
 fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 3.8))
 for label, members, color in cohorts:
-    ax.ecdf(spans.loc[members, "n_years"], color=color, label=f"{label} ({members.sum():,})")
+    ax.ecdf(spans.loc[members, "n_years"], color=color, label=f"{label} ({members.sum():,})",
+            linewidth=2.4 if color == viz.INK else 1.8)  # fmt: skip
 ax.set_xticks(range(0, last_year - first_year + 2, 2))
 ax.set_xlim(0, last_year - first_year + 1.5)
 ax.yaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
@@ -633,9 +637,9 @@ for ax, (column, title) in zip(axes.flat, panels):
     ax.set_xticks(range(first_year, last_year + 1, 6))
 viz.exhibit(
     fig,
-    f"Small, often loss-making, and {flags.no_lt_debt.mean():.0%} carry no long-term debt",
-    f"All firm-years, by fiscal year. Losses run between {profile['net_loss'].min():.0%} and "
-    f"{profile['net_loss'].max():.0%} of companies.",
+    f"A net loss in {profile['net_loss'].min():.0%} to {profile['net_loss'].max():.0%} of companies "
+    f"each year, and up to {profile['negative_equity'].max():.0%} owe more than they own",
+    "All firm-years, by fiscal year.",
     SOURCE,
 )
 
@@ -676,9 +680,9 @@ ax.set_xlabel("Total assets, in file units (log scale, equal-width bins in log)"
 ax.set_ylabel("Firm-years")
 viz.exhibit(
     fig,
-    "Size spans many orders of magnitude, centred on small companies",
-    f"Half of all firm-years sit between {quartiles.loc[0.25]:,.0f} and "
-    f"{quartiles.loc[0.75]:,.0f} in total assets.",
+    f"Total assets span {np.log10(assets.quantile(0.99) / assets.quantile(0.01)):.0f} orders of magnitude",
+    f"Half of all firm-years sit between {quartiles.loc[0.25]:,.0f} and {quartiles.loc[0.75]:,.0f}. "
+    "The span leaves out the smallest and the largest hundredth.",
     SOURCE,
 )
 
@@ -711,11 +715,15 @@ ax.xaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
 ax.set_xlim(-0.02, ends.to_numpy().max() * 1.12)
 ax.grid(axis="y", visible=False)
 ax.set_xlabel("Share of the companies filing that year")
-ax.legend(loc="lower right")
+top = len(ends) - 1  # manufacturing, the largest division, is the top row
+for year, side in ((first_year, -1), (last_year, 1)):
+    ax.annotate(str(year), (ends[year].iloc[top], top), xytext=(side * 9, 9), textcoords="offset points",
+                ha="right" if side < 0 else "left", size=9, color=viz.SLATE)  # fmt: skip
+ax.set_ylim(-0.6, top + 0.9)
 viz.exhibit(
     fig,
     "The industry mix barely moves, and manufacturing leads it",
-    f"Share of companies by SIC division in {first_year} and in {last_year}.",
+    f"Share of companies by SIC division. Open dot: {first_year}. Filled dot: {last_year}.",
     f"{SOURCE}; SIC divisions from the authors' later copy",
 )
 
@@ -728,7 +736,7 @@ viz.exhibit(
 # **Next, whether the accounts agree with each other.**
 
 # %% [markdown]
-# # Do the Numbers Add Up
+# # Do the Numbers Add Up?
 #
 # Accounts obey arithmetic.
 # Gross profit is sales less the cost of goods sold, whoever reports it.
@@ -796,11 +804,13 @@ kept = order <= independent
 fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 3.6))
 ax.plot(order, np.maximum(relative, FLOOR), color=viz.RULE, linewidth=1, zorder=1)
 ax.scatter(order[kept], relative[kept], s=36, color=viz.INK, zorder=3,
-           label=f"{independent} independent directions")  # fmt: skip
+           label=f"{independent} independent items")  # fmt: skip
 ax.scatter(order[~kept], np.maximum(relative[~kept], FLOOR), s=36, facecolor=viz.SHEET,
            edgecolor=viz.INK, zorder=3, label=f"{len(items) - independent} that repeat the others")  # fmt: skip
 viz.log_axis(ax, "y")
 ax.set_ylim(FLOOR / 3, 3)
+ax.set_yticks([1, 1e-2, 1e-4, 1e-6, 1e-8],
+              ["1", "1 / 100", "1 / 10,000", "1 / 1 million", "1 / 100 million"])  # fmt: skip
 ax.set_xticks(order)
 ax.grid(axis="x", visible=False)
 ax.set_xlabel("Singular value, largest first")
@@ -808,7 +818,7 @@ ax.set_ylabel("Size relative to the largest")
 ax.legend(loc="lower left")
 viz.exhibit(
     fig,
-    f"The {len(items)} columns hold {independent} independent directions",
+    f"The {len(items)} columns hold {independent} independent items",
     f"After the first {independent}, the singular values fall off a cliff. "
     "Any too small to draw sit at the lower edge.",
     SOURCE,
@@ -888,7 +898,18 @@ income = raw["net_income"]
 shifted = income - income.min() + 1
 
 fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 3.2))
-naive_counts, _, _ = ax.hist(shifted, bins=BARS, color=viz.SLATE)
+naive_counts, naive_edges, _ = ax.hist(shifted, bins=BARS, color=viz.INK, edgecolor=viz.INK,
+                                       linewidth=2)  # fmt: skip
+tallest = int(naive_counts.argmax())
+ax.annotate(
+    f"{naive_counts.max() / len(income):.0%} of firm-years in one bar",
+    (naive_edges[tallest], naive_counts.max() * 0.62),
+    xytext=(-14, 0),
+    textcoords="offset points",
+    ha="right",
+    va="center",
+    size=9.5,
+)
 viz.log_axis(ax, "x")
 ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:,.0f}"))
 ax.set_xlabel("Net income, shifted to be positive (log scale)")
@@ -928,7 +949,7 @@ honest_counts, _, _ = ax.hist(income, bins=signed_bins, color=viz.SLATE)
 viz.symlog_axis(ax, "x", linthresh=1.0)
 ax.set_xticks([-1e4, -1e2, -1, 0, 1, 1e2, 1e4])
 ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:,.0f}"))
-ax.set_xlabel("Net income, in file units (symmetric-log scale)")
+ax.set_xlabel("Net income, in file units (symmetric-log scale, linear between -1 and 1)")
 ax.set_ylabel("Firm-years")
 
 store.put("honest_tallest", honest_counts.max() / len(income))
@@ -976,7 +997,7 @@ for row, item in enumerate(ordered):
     ax.plot([raw[item].median()] * 2, [row - 0.42, row + 0.42], color=viz.INK, linewidth=1.4)
 viz.symlog_axis(ax, "x", linthresh=1.0)
 ax.set_xticks([-1e4, -1e2, -1, 0, 1, 1e2, 1e4, 1e6])
-ax.set_yticks(range(len(ordered)), ordered)
+ax.set_yticks(range(len(ordered)), [viz.label(item) for item in ordered])
 ax.grid(axis="y", visible=False)
 ax.set_xlabel("Value, in file units (symmetric-log scale)")
 
@@ -987,14 +1008,16 @@ store.put("signed_items", len(signed))
 
 viz.exhibit(
     fig,
-    f"{len(signed)} of the {len(RAW_ITEMS)} accounts are often negative",
-    "The black line is the median. Each lighter box reaches further into both tails.",
+    f"Earnings can be negative: {len(signed)} of the {len(RAW_ITEMS)} accounts often are",
+    "Black line: the median. Widest box: the middle half. Each narrower box takes in half of what "
+    "is left in each tail.",
     SOURCE,
 )
 
 # %% [markdown]
 # **Reading.** Exhibit 11 reads from the bottom up, by median.
 # The earnings lines, gross profit, and retained earnings are negative in more than {{ch1.often:.0%}} of rows: {{ch1.signed_items}} of the {{ch1.raw_items}} accounts.
+# The count is {{ch1.raw_items}} because `load_raw` dropped `total_revenue`, the copy.
 #
 # The rest pile up at or above zero, and some, like inventory and long-term debt, are exactly zero for many companies.
 # Every one of them spans several orders of magnitude.
@@ -1016,8 +1039,7 @@ viz.exhibit(
 # %% [markdown]
 # # What the File Cannot Tell Us
 #
-# A dataset is defined as much by what it leaves out.
-# Each missing field closes off a kind of analysis, and it is better to know that now.
+# Each field the file lacks closes off a kind of analysis, and it is better to know that now.
 #
 # | Not in the file | What that rules out |
 # | --- | --- |
@@ -1038,13 +1060,13 @@ viz.exhibit(
 # %% [markdown]
 # # Findings
 #
-# 1. The file holds {{ch1.firm_years:,}} firm-years from {{ch1.companies:,}} companies, and the number filing falls by {{ch1.shrink:.0%}} over {{ch1.n_years}} years (Exhibit 1).
-# 2. More companies leave than join, and only {{ch1.failed_share_of_exits:.0%}} of those that leave are failures (Exhibit 2).
-# 3. Of all the companies, {{ch1.first_seen_share:.0%}} are already present in the first year, so their earlier history is cut off (Exhibit 3).
+# 1. The panel is not a fixed list: it holds {{ch1.firm_years:,}} firm-years from {{ch1.companies:,}} companies, and the number filing falls by {{ch1.shrink:.0%}} over {{ch1.n_years}} years (Exhibit 1).
+# 2. Leaving the file is not failing: more companies leave than join, and only {{ch1.failed_share_of_exits:.0%}} of those that leave are failures (Exhibit 2).
+# 3. A company's age cannot be read from the file: {{ch1.first_seen_share:.0%}} of companies are already present in the first year, with their earlier history cut off (Exhibit 3).
 # 4. Histories are short: the median is {{ch1.median_history:.0f}} years, and {{ch1.complete_share:.0%}} of companies are present throughout (Exhibit 4).
-# 5. The universe is small and often loss-making: {{ch1.loss_share:.0%}} of firm-years show a net loss and {{ch1.no_debt_share:.0%}} carry no long-term debt (Exhibit 5, Exhibit 6).
+# 5. These are not bond issuers: {{ch1.loss_share:.0%}} of firm-years show a net loss and {{ch1.no_debt_share:.0%}} carry no long-term debt (Exhibit 5, Exhibit 6).
 # 6. The industry mix is stable: manufacturing is {{ch1.manufacturing_first:.0%}} of the companies in the first year and {{ch1.manufacturing_last:.0%}} in the last (Exhibit 7).
-# 7. The {{ch1.items}} accounting columns hold {{ch1.independent}} independent items (Exhibit 8).
+# 7. Counting columns overstates the information: the {{ch1.items}} accounting columns hold {{ch1.independent}} independent items (Exhibit 8).
 # 8. Losses are {{ch1.income_negative:.0%}} of firm-years, and only a signed scale shows them (Exhibit 9, Exhibit 10, Exhibit 11).
 
 # %% [markdown]
