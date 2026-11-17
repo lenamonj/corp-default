@@ -31,12 +31,12 @@ class Fold(NamedTuple):
 
 
 def development(frame: pd.DataFrame) -> pd.DataFrame:
-    """Observation years up to DEV_END: everything a model may be built and chosen on."""
+    """Fiscal years up to DEV_END: everything a model may be built and chosen on."""
     return frame.loc[frame["year"] <= DEV_END]
 
 
 def holdout(frame: pd.DataFrame, *, unseal: bool = False) -> pd.DataFrame:
-    """Observation years 2014 to 2016. Refuses unless unseal=True, which only Chapter 7 passes."""
+    """Fiscal years 2014 to 2016. Refuses unless unseal=True, which only Chapter 7 passes."""
     if not unseal:
         raise SealedHoldoutError(
             f"the {HOLDOUT[0]} to {HOLDOUT[1]} holdout is sealed until Chapter 7 opens it"

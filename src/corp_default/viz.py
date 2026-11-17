@@ -228,9 +228,15 @@ def exhibit(
     left = 0.32 / fig.get_figwidth()
     fig.text(left, at(0.22), f"EXHIBIT {_count}", family=_fonts["mono"], weight=700, size=8.5,
              color=SLATE, va="top")  # fmt: skip
-    fig.text(left, at(0.40), title, family=_fonts["display"], weight=600, size=14, color=INK,
-             va="top")  # fmt: skip
-    fig.text(left, at(0.68), note, size=10, color=SLATE, va="top")
+    heading = fig.text(left, at(0.40), title, family=_fonts["display"], weight=600, size=14,
+                       color=INK, va="top")  # fmt: skip
+    subheading = fig.text(left, at(0.68), note, size=10, color=SLATE, va="top")
+    # A line that runs past the right margin is cut off in the notebook, so it is refused here.
+    renderer = fig.canvas.get_renderer()
+    limit = fig.bbox.x1 - left * fig.bbox.width
+    for name, text in (("title", heading), ("note", subheading)):
+        if text.get_window_extent(renderer).x1 > limit:
+            raise ValueError(f"the exhibit's {name} is too long for the page: {text.get_text()!r}")
     if source:
         fig.text(left, 0.12 / new_height, f"Source: {source}", size=8, color=MIST, va="bottom")
     if save_as:

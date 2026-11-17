@@ -56,7 +56,7 @@
 #
 # | Name | What it holds |
 # | --- | --- |
-# | **PD** | A probability of default: the chance that a firm-year is followed by a final filing within two years |
+# | **PD** | A probability of default: the chance that a firm-year is followed by a last filing within two years |
 # | **Grade** | One of seven bands of a score's percentile within its year, from the safest, one, to the riskiest, seven |
 #
 # Five words are new.
@@ -66,7 +66,7 @@
 # | **Calibration** | Turning a score into a probability that matches how often the event happens |
 # | **Brier score** | The mean squared gap between a probability and the outcome, lower being better |
 # | **Master scale** | A fixed set of grades, each with its own probability of default |
-# | **Holdout** | The observation years {{ch7.holdout_first}} to {{ch7.holdout_last}}, sealed since Chapter 4 |
+# | **Holdout** | The fiscal years {{ch7.holdout_first}} to {{ch7.holdout_last}}, sealed since Chapter 4 |
 # | **SHAP value** | The part of one row's score that is credited to one of its inputs |
 #
 # Q. What does the chapter need before it starts?
@@ -365,7 +365,7 @@ ax.annotate("share that failed", (by_year.index[0], by_year["rate"].iloc[0]), xy
             textcoords="offset points", color=viz.INK, size=9, va="center")  # fmt: skip
 ax.yaxis.set_major_formatter(PercentFormatter(1, decimals=1))
 ax.set_ylim(0, None)
-ax.set_xlabel("Observation year")
+ax.set_xlabel("Fiscal year")
 ax.grid(axis="x", visible=False)
 
 store.put("pooled_gap", abs(own_rows.mean() - base_rate))
@@ -385,7 +385,7 @@ viz.exhibit(
     fig,
     f"The mean PD stays near {base_rate:.1%} while the share that failed runs from "
     f"{by_year['rate'].min():.1%} to {by_year['rate'].max():.1%}",
-    "Cross-fitted probability of the chosen model against outcomes, by observation year, with 95% "
+    "Cross-fitted probability of the chosen model against outcomes, by fiscal year, with 95% "
     "Wilson intervals.",
     OOF_SOURCE,
 )
@@ -618,7 +618,7 @@ len(fitted), list(BLENDS)
 # Nothing in that cell looked at a year after {{ch7.dev_last}}.
 #
 # The next cell is the only one in the casebook that does.
-# The holdout is the observation years {{ch7.holdout_first}} to {{ch7.holdout_last}}, and the two years between are left out because their labels overlap the last development years.
+# The holdout is the fiscal years {{ch7.holdout_first}} to {{ch7.holdout_last}}, and the two years between are left out because their labels overlap the last development years.
 #
 # **Predict 1.** The chosen model scored {{ch7.walked_auc:.3f}} on the walk-forward, and that number helped to choose it. Will its ROC-AUC on the holdout be higher, lower, or about the same?
 #
@@ -744,7 +744,7 @@ viz.exhibit(
     "published score",
     "Holdout scores with 95% cluster-bootstrap intervals. Open circles: the walk-forward score. "
     "Right: paired differences.",
-    f"{SOURCE}; observation years {HOLDOUT[0]} to {HOLDOUT[1]}",
+    f"{SOURCE}; fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
     save_as="ladder",
 )
 both.round(3)
@@ -844,7 +844,7 @@ viz.exhibit(
     f"The top 5% of each year holds {top['capture_5']:.0%} of the failures, and "
     f"{board.loc[CLASSIC, 'capture_5']:.0%} by the published score",
     "Capture curves on the holdout with 95% cluster-bootstrap bands.",
-    f"{SOURCE}; observation years {HOLDOUT[0]} to {HOLDOUT[1]}",
+    f"{SOURCE}; fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
 )
 budgets.round(3)
 
@@ -900,7 +900,7 @@ viz.exhibit(
     f"The grades keep their order, and grade seven fails at {grades_holdout.loc[7, 'rate']:.0%} "
     f"against a PD of {GRADE_PD[7]:.0%}",
     "Holdout firm-years by grade, with 95% Wilson intervals. A bar marks the PD fixed beforehand.",
-    f"{SOURCE}; observation years {HOLDOUT[0]} to {HOLDOUT[1]}",
+    f"{SOURCE}; fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
 )
 grades_holdout.round(4)
 
@@ -935,7 +935,7 @@ cuts = {"All holdout firm-years": (np.ones(len(sealed), dtype=bool), sealed["tar
 cuts["Companies seen in development"] = (seen, sealed["target"])
 cuts["Companies never seen"] = (~seen, sealed["target"])
 for year in range(HOLDOUT[0], HOLDOUT[1] + 1):
-    cuts[f"Observation year {year}"] = ((sealed["year"] == year).to_numpy(), sealed["target"])
+    cuts[f"Fiscal year {year}"] = ((sealed["year"] == year).to_numpy(), sealed["target"])
 cuts["Without unconfirmed failures"] = (~unconfirmed, sealed["target"])
 cuts["Failure within one year"] = (np.ones(len(sealed), dtype=bool), sealed["target_1"])
 cuts["Failure within three years"] = (sealed["target_3"].notna().to_numpy(), sealed["target_3"])
@@ -972,8 +972,8 @@ store.put("n_unconfirmed", int(unconfirmed.sum()))
 store.put("confirmed_auc", robust.loc["Without unconfirmed failures", "roc_auc"])
 store.put("one_year_auc", robust.loc["Failure within one year", "roc_auc"])
 store.put("three_year_auc", robust.loc["Failure within three years", "roc_auc"])
-store.put("year_auc_low", robust.filter(like="Observation year", axis=0)["roc_auc"].min())
-store.put("year_auc_high", robust.filter(like="Observation year", axis=0)["roc_auc"].max())
+store.put("year_auc_low", robust.filter(like="Fiscal year", axis=0)["roc_auc"].min())
+store.put("year_auc_high", robust.filter(like="Fiscal year", axis=0)["roc_auc"].max())
 store.put(
     "cuts_holding",
     int(((robust["low"] <= top["roc_auc"]) & (top["roc_auc"] <= robust["high"])).sum()),
@@ -994,7 +994,7 @@ viz.exhibit(
     f"seen before {robust.loc['Companies seen in development', 'roc_auc']:.3f}",
     "ROC-AUC with 95% cluster-bootstrap intervals. The number after each cut is its failures. "
     "Dashed: the whole holdout.",
-    f"{SOURCE}; observation years {HOLDOUT[0]} to {HOLDOUT[1]}",
+    f"{SOURCE}; fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
 )
 robust.round(3)
 
@@ -1078,7 +1078,7 @@ viz.exhibit(
     f"The {shap_share.index[-1]} ratios carry {shap_share.iloc[-1]:.0%} of the credit, and the "
     f"{shap_share.index[-2]} ratios {shap_share.iloc[-2]:.0%}",
     f"Left: mean absolute SHAP value, summed by family. Right: mean of {REPEATS} shuffles.",
-    f"{SOURCE}; observation years {HOLDOUT[0]} to {HOLDOUT[1]}",
+    f"{SOURCE}; fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
 )
 
 # %% [markdown]
@@ -1121,7 +1121,7 @@ viz.exhibit(
     fig,
     f"{TOP[0]} moves the score most, then {TOP[1]} and {TOP[2]}",
     "One dot for each holdout firm-year and ratio. Dark is a high value of the ratio, pale a low one.",
-    f"{SOURCE}; observation years {HOLDOUT[0]} to {HOLDOUT[1]}",
+    f"{SOURCE}; fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
 )
 direction.round(2).to_frame("rank correlation of the ratio with its SHAP value")
 
@@ -1159,7 +1159,7 @@ viz.exhibit(
     "its upper",
     "Holdout firm-years. Colour is the percentile of the ratio that most changes the picture, "
     "dark for high.",
-    f"{SOURCE}; observation years {HOLDOUT[0]} to {HOLDOUT[1]}",
+    f"{SOURCE}; fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
 )
 
 # %% [markdown]
@@ -1261,7 +1261,7 @@ viz.exhibit(
     f"The caught case ranked above {files.loc['Caught', 'percentile']:.0%} of its year, and the "
     f"missed one above {files.loc['Missed', 'percentile']:.0%}",
     "Left: percentile through time, a dot at the case year, the holdout shaded. Right: SHAP values.",
-    f"{SOURCE}; chosen by rule from observation years {HOLDOUT[0]} to {HOLDOUT[1]}",
+    f"{SOURCE}; chosen by rule from fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
 )
 files.round(3)
 
@@ -1282,10 +1282,10 @@ files.round(3)
 # %% [markdown]
 # # How Early Does It See
 #
-# A warning one year before the final filing helps less than one three years before.
-# The holdout holds firm-years of failed companies from one to four years ahead of their final filing.
+# A warning one year before the last filing helps less than one three years before.
+# The holdout holds firm-years of failed companies from one to four years ahead of their last filing.
 #
-# Q. How high does the model rank a failing company as the final filing nears?
+# Q. How high does the model rank a failing company as the last filing nears?
 
 # %%
 doomed = sealed["failed"].astype(bool).to_numpy() & (sealed["years_to_final"] >= 1).to_numpy()
@@ -1321,7 +1321,7 @@ share.set_title(f"Share in the top {BUDGET:.0%}")
 for ax in (rank, share):
     ax.invert_xaxis()
     ax.set_xticks(ahead.index)
-    ax.set_xlabel("Years before the final filing")
+    ax.set_xlabel("Years before the last filing")
     ax.yaxis.set_major_formatter(PercentFormatter(1, decimals=0))
     ax.grid(axis="x", visible=False)
 
@@ -1329,7 +1329,7 @@ for years in (ahead.index.min(), ahead.index.max()):
     store.put(f"median_{years}_out", ahead.loc[years, "median"])
     store.put(f"flagged_{years}_out", ahead.loc[years, "share flagged"])
 store.put("farthest", int(ahead.index.max()))
-# The readings say the rank rises as the final filing nears, and nothing four years out is flagged.
+# The readings say the rank rises as the last filing nears, and nothing four years out is flagged.
 assert ahead["median"].is_monotonic_decreasing
 assert ahead.loc[ahead.index.max(), "flagged"] == 0
 
@@ -1339,13 +1339,13 @@ viz.exhibit(
     f"{ahead.loc[ahead.index.max(), 'median']:.0%}, one year out above {ahead.loc[1, 'median']:.0%}",
     "Holdout firm-years of companies that later failed. Dashed: what a company picked at random "
     "would show.",
-    f"{SOURCE}; observation years {HOLDOUT[0]} to {HOLDOUT[1]}",
+    f"{SOURCE}; fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
 )
 ahead.round(3)
 
 # %% [markdown]
 # **Reading.** In Exhibit 12 the warning builds over years.
-# {{ch7.farthest}} years before the final filing the median failing company already ranks above {{ch7.median_4_out:.0%}} of its year, where a company picked at random would rank above half.
+# {{ch7.farthest}} years before the last filing the median failing company already ranks above {{ch7.median_4_out:.0%}} of its year, where a company picked at random would rank above half.
 #
 # One year out it ranks above {{ch7.median_1_out:.0%}}.
 # The list is slower than the rank: none of the firm-years {{ch7.farthest}} years out is in the top twentieth, and one year out {{ch7.flagged_1_out:.0%}} are.
@@ -1441,7 +1441,7 @@ pd.Series(claims).to_frame("what the front page quotes")
 # 6. The seven grades keep their order on the holdout, and the PD fixed beforehand is inside the interval for {{ch7.grades_inside}} of them (Exhibit 6).
 # 7. On companies it never saw the model scores {{ch7.unseen_auc:.3f}}, with an interval from {{ch7.unseen_low:.3f}} to {{ch7.unseen_high:.3f}}, against {{ch7.seen_auc:.3f}} on companies from the development years (Exhibit 7).
 # 8. Leverage, profitability, and the market's view drive the score, and market value over liabilities is the leading ratio (Exhibit 8, Exhibit 9).
-# 9. A failing company ranks above {{ch7.median_4_out:.0%}} of its year {{ch7.farthest}} years before its final filing and above {{ch7.median_1_out:.0%}} one year before (Exhibit 12).
+# 9. A failing company ranks above {{ch7.median_4_out:.0%}} of its year {{ch7.farthest}} years before its last filing and above {{ch7.median_1_out:.0%}} one year before (Exhibit 12).
 
 # %% [markdown]
 # # Your Turn
@@ -1463,7 +1463,7 @@ pd.Series(claims).to_frame("what the front page quotes")
 # <details>
 # <summary>Hint</summary>
 #
-# The failures known at the start of a year are those with a final filing two or more years back.
+# The failures known at the start of a year are those with a last filing two or more years back.
 # Scale `pd_holdout` by that known rate over `base_rate`, and compare the Brier score with `brier_holdout`.
 #
 # </details>

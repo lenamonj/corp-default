@@ -208,8 +208,8 @@ ax.yaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
 ax.set_ylabel("Share of rows flagged failed")
 viz.exhibit(
     fig,
-    f"The share of flagged rows falls from {flag_rate.loc[first_year]:.1%} "
-    f"to {flag_rate.loc[last_year]:.1%}",
+    f"The flagged share falls from a {flag_rate.max():.1%} peak to {flag_rate.loc[last_year]:.1%} "
+    "as the future shrinks",
     "Rows flagged failed as a share of all rows, by fiscal year. It is not a default rate.",
     SOURCE,
 )
@@ -220,8 +220,8 @@ viz.exhibit(
 #
 # The {{ch2.first_year}} point counts every company that fails at any time before the file ends.
 # The {{ch2.last_year}} point counts only the companies about to fail.
-#
 # The line falls because the future gets shorter.
+#
 # It rises to {{ch2.flag_peak:.1%}} first because unflagged companies are already leaving while few flagged ones have failed yet.
 #
 # The second problem shows when a model of the flag is tested.
@@ -362,7 +362,7 @@ compare
 # %%
 # taught: corp_default.labels.build_label
 def build_label(frame: pd.DataFrame, horizon: int) -> pd.DataFrame:
-    """Label each firm-year: does the company's final filing fall 1 to `horizon` years later?
+    """Label each firm-year: does the company's last filing fall 1 to `horizon` years later?
 
     Drops the final-year rows of failed companies, which have no future to predict, and every
     row whose outcome window runs past PANEL_END, where the outcome is not yet known.
@@ -435,7 +435,7 @@ print("label checks passed")
 # **Next, whether a last filing looks like a company about to fail.**
 
 # %% [markdown]
-# # Is the Proxy Any Good
+# # Is the Last Filing a Good Stand-In?
 #
 # The label rests on one assumption: a flagged company's last filing marks its failure.
 # The file cannot confirm that, but it can show whether those last filings look like companies in trouble.
@@ -508,7 +508,12 @@ ax.hexbin(
     cmap=cloud,
     linewidths=0,
 )
-ax.scatter(*framed(audit), s=13, color=viz.FAILED, edgecolor=viz.SHEET, linewidth=0.3, zorder=3)
+leverage, returns = framed(audit)
+beyond = (leverage != audit["liabilities_to_assets"]) | (returns != audit["roa"])
+ax.scatter(leverage[~beyond], returns[~beyond], s=13, color=viz.FAILED, edgecolor=viz.SHEET,
+           linewidth=0.3, zorder=3)  # fmt: skip
+ax.scatter(leverage[beyond], returns[beyond], s=26, marker="^", facecolor=viz.SHEET,
+           edgecolor=viz.FAILED, linewidth=0.9, zorder=3, clip_on=False)  # fmt: skip
 ax.axhline(0, color=viz.INK, linewidth=0.8)
 ax.axvline(1, color=viz.INK, linewidth=0.8)
 ax.text(1.02, 0.42, "liabilities above assets", size=8.5, color=viz.INK)
@@ -531,7 +536,8 @@ ax.legend(
 viz.exhibit(
     fig,
     f"At their last filing, {loss_share:.0%} of failed companies report a loss",
-    "Darker grey holds more firm-years. A failed company beyond the frame is drawn at its edge.",
+    "Darker grey holds more firm-years. An open triangle is a failed company beyond the frame, "
+    "drawn at its edge.",
     f"{SOURCE}; fiscal years to {DEV_END}",
 )
 
@@ -606,7 +612,7 @@ fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 3.8))
 top = by_year["high"].max() * 1.22
 for name, years in shaded.items():
     ax.axvspan(min(years) - 0.5, max(years) + 0.5, color=viz.RULE, alpha=0.7, linewidth=0)
-    ax.text(min(years) - 0.4, top * 0.93, name, size=8.5, color=viz.SLATE)
+    ax.text(min(years) - 0.4, top * 0.93, f"window reaches the {name}", size=8.5, color=viz.SLATE)
 ax.errorbar(
     by_year.index,
     by_year["rate"],
@@ -627,7 +633,7 @@ ax.set_ylabel("Last filing within two years")
 viz.exhibit(
     fig,
     f"The two-year failure rate peaks at {by_year['rate'].max():.1%} in {peak_year}",
-    "Bars: 95% Wilson intervals. Shaded: years whose window reaches a recession's filings.",
+    "Bars: 95% Wilson intervals. Shaded: years whose two-year window reaches a recession.",
     f"{SOURCE}; recession dates from the NBER",
 )
 
@@ -884,9 +890,9 @@ def kaplan_meier(duration, event, entry=None) -> pd.DataFrame:
 AT = 10  # years in the file at which the curves are compared
 cohorts = [
     (f"In the file from {first_year}", events["entry_year"] == first_year, viz.INK),
-    ("Joined 2000 to 2004", events["entry_year"].between(2000, 2004), "#173F66"),
-    ("Joined 2005 to 2009", events["entry_year"].between(2005, 2009), "#5F86AE"),
-    ("Joined 2010 or later", events["entry_year"] >= 2010, "#9DB4CC"),
+    ("Joined 2000 to 2004", events["entry_year"].between(2000, 2004), viz.COHORTS[0]),
+    ("Joined 2005 to 2009", events["entry_year"].between(2005, 2009), viz.COHORTS[1]),
+    (f"Joined 2010 to {last_year}", events["entry_year"] >= 2010, viz.COHORTS[2]),
 ]
 
 
@@ -903,7 +909,8 @@ for label, members, color in cohorts:
     curves[label] = km.set_index("time")["survival"]
     lowest = min(lowest, (km["survival"] - 1.96 * km["se"]).min())
     time = from_zero(0, km["time"])
-    ax.step(time, from_zero(1, km["survival"]), where="post", color=color, linewidth=1.6,
+    ax.step(time, from_zero(1, km["survival"]), where="post", color=color,
+            linewidth=2.4 if color == viz.INK else 1.8,
             label=f"{label} ({len(cohort):,})")  # fmt: skip
     ax.fill_between(
         time,
@@ -932,12 +939,12 @@ floor = np.floor(lowest * 20) / 20  # the nearest five points below the lowest b
 ax.set_ylim(floor, 1.005)
 ax.yaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
 ax.set_xlabel("Years in the file")
-ax.set_ylabel(f"Share not yet failed (axis starts at {floor:.0%})")
+ax.set_ylabel("Share not yet failed")
 ax.legend(loc="lower left")
 viz.exhibit(
     fig,
     f"The {first_year} cohort fails more slowly than later arrivals",
-    "Kaplan-Meier by year of joining, with 95% bands. A tick is a year with censored companies.",
+    f"Kaplan-Meier by year of joining, with 95% bands. Ticks: censored companies. Axis from {floor:.0%}.",
     SOURCE,
 )
 
@@ -1009,12 +1016,14 @@ fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 4.2))
 ax.fill_between(time, 0, failed_share, step="post", color=viz.FAILED, linewidth=0, label="Failed")
 ax.fill_between(time, failed_share, gone_share, step="post", color=viz.CENSORED, linewidth=0,
                 label="Left another way")  # fmt: skip
-ax.fill_between(time, gone_share, 1, step="post", color=viz.SURVIVED, alpha=0.3, linewidth=0,
+ax.fill_between(time, gone_share, 1, step="post", color="#BCCDDD", linewidth=0,
                 label="Still filing")  # fmt: skip
 ax.step(time, failed_share, where="post", color=viz.SHEET, linewidth=1)
 ax.step(time, gone_share, where="post", color=viz.SHEET, linewidth=1)
 ax.step(time, from_zero(0, 1 - km_all["survival"]), where="post", color=viz.INK, linewidth=1.4,
-        linestyle="--", label="One minus Kaplan-Meier")  # fmt: skip
+        linestyle="--")  # fmt: skip
+ax.annotate("One minus Kaplan-Meier", (time[-1], 1 - km_all["survival"].iloc[-1]), xytext=(-8, 7),
+            textcoords="offset points", ha="right", size=9.5)  # fmt: skip
 ax.set_xticks(range(0, last_year - first_year + 2, 2))
 ax.set_xlim(0, last_year - first_year + 1)
 ax.set_ylim(0, 1)
@@ -1022,7 +1031,7 @@ ax.yaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
 ax.grid(axis="x", visible=False)
 ax.set_xlabel("Years in the file")
 ax.set_ylabel("Share of all companies")
-ax.legend(loc="upper left", ncols=2)
+ax.legend(loc="lower left", bbox_to_anchor=(0, 1), ncols=3, borderaxespad=0.2)
 viz.exhibit(
     fig,
     f"After {AT} years, {incidence.loc[AT, 'cif_failed']:.0%} have failed and "
@@ -1059,7 +1068,7 @@ viz.exhibit(
 # A longer horizon has a second effect, at the end of the file.
 # A positive row is **unconfirmed** when its company's last row is {{ch2.last_year}}, the file's last year.
 #
-# The company is flagged, but the file shows no later year because it has no later year.
+# The company is flagged, and that year is the file's last, so no later row can confirm that it stopped.
 # The paper's table counts these companies as failures of the following year, which supports the label, but the file alone cannot confirm it.
 #
 # Q. How do the base rate and the unconfirmed share change with the horizon?
@@ -1091,8 +1100,8 @@ store.put("unconfirmed_3", horizons.loc[3, "unconfirmed share"])
 store.put("rows_lost_3", int(horizons.loc[2, "rows"] - horizons.loc[3, "rows"]))
 
 panels = [
-    ("base rate", "Positive rows as a share of labelled rows", 2, 1),
-    ("unconfirmed share", f"Positives resting on a last row of {PANEL_END}", 1, 0),
+    ("base rate", "Base rate: positive share of labelled rows", 2, 1),
+    ("unconfirmed share", "Unconfirmed share of positives", 1, 0),
 ]
 fig, axes = plt.subplots(1, 2, figsize=(viz.EXHIBIT_WIDTH_IN, 3.2))
 for ax, (column, title, decimals, axis_decimals) in zip(axes, panels):
@@ -1103,13 +1112,13 @@ for ax, (column, title, decimals, axis_decimals) in zip(axes, panels):
     ax.set_title(title)
     ax.set_xticks(range(len(horizons)), ["1 year", "2 years", "3 years"])
     ax.set_ylim(0, horizons[column].max() * 1.25)
-    ax.yaxis.set_major_formatter(PercentFormatter(1.0, decimals=axis_decimals))
-    ax.grid(axis="x", visible=False)
+    ax.set_yticks([])
+    ax.grid(visible=False)
 viz.exhibit(
     fig,
     f"A longer horizon lifts the base rate from {horizons.loc[1, 'base rate']:.1%} "
     f"to {horizons.loc[3, 'base rate']:.1%}",
-    "One, two, and three years ahead. The darker bars are the label this casebook carries.",
+    "One, two, and three years ahead. Darker bars: the label this casebook carries.",
     SOURCE,
 )
 
@@ -1170,8 +1179,8 @@ near_end.loc[whole, columns].head(4)
 #
 # 1. The flag marks a company and not a year: its share of rows falls from {{ch2.flag_first:.1%}} to {{ch2.flag_last:.1%}} only because the future gets shorter (Exhibit 1).
 # 2. A failed company's last filing dates its failure, and at that filing {{ch2.audit_loss:.0%}} of them report a loss and {{ch2.audit_distress:.0%}} sit in Altman's distress zone (Exhibit 2).
-# 3. The two-year label has {{ch2.positives:,}} positives in {{ch2.labelled_rows:,}} firm-years, a base rate of {{ch2.base_rate:.2%}}, and the rate peaks at {{ch2.rate_peak:.2%}} in {{ch2.peak_year}} (Exhibit 3).
-# 4. For every company that fails, {{ch2.left_per_failed:.0f}} leave another way, and at their last filing they look weaker than the companies that stay (Exhibit 4, Exhibit 5).
+# 3. Failure is rare and moves with the cycle: the two-year label has {{ch2.positives:,}} positives in {{ch2.labelled_rows:,}} firm-years, a base rate of {{ch2.base_rate:.2%}}, and the rate peaks at {{ch2.rate_peak:.2%}} in {{ch2.peak_year}} (Exhibit 3).
+# 4. A zero in the label means no bankruptcy filed, not a healthy company: for every company that fails, {{ch2.left_per_failed:.0f}} leave another way, and at their last filing they look weaker than the companies that stay (Exhibit 4, Exhibit 5).
 # 5. The companies already in the file in {{ch2.first_year}} fail more slowly than later arrivals, as a cohort of survivors would (Exhibit 6).
 # 6. Within {{ch2.at_years}} years of joining, {{ch2.cif_fail_at:.1%}} of companies fail, and treating other exits as censoring would say {{ch2.km_fail_at:.1%}} (Exhibit 7).
 # 7. A longer horizon lifts the base rate from {{ch2.base_1:.2%}} to {{ch2.base_3:.2%}} and thins the share of positives that rest on the file's last year (Exhibit 8).

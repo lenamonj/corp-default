@@ -158,7 +158,7 @@ def test_diagram_parts_draw_on_a_figure_plate(studio, tmp_path):
         1000,
         160,
         box(0, 0, 200, 60),
-        words(0, 20, 200, "Observation year t", "b"),
+        words(0, 20, 200, "Fiscal year t", "b"),
         timebar(220, 0, 300, 28, "train", "TRAIN"),
         timebar(530, 0, 120, 28, "embargo", "EMBARGO"),
         timebar(660, 0, 120, 28, "valid", "VALID"),

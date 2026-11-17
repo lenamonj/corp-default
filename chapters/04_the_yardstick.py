@@ -187,7 +187,7 @@ features[["year", "target", "years_observed"]].describe().T.round(3)
 # %%
 # taught: corp_default.splits.development
 def development(frame: pd.DataFrame) -> pd.DataFrame:
-    """Observation years up to DEV_END: everything a model may be built and chosen on."""
+    """Fiscal years up to DEV_END: everything a model may be built and chosen on."""
     return frame.loc[frame["year"] <= DEV_END]
 
 

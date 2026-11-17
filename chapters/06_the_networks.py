@@ -61,7 +61,7 @@
 # | --- | --- |
 # | **Transformed ratio** | A ratio moved onto a bell-shaped scale by its rank among the training rows |
 # | **Blank flag** | One where a ratio could not be computed, zero elsewhere |
-# | **Hazard target** | For each of three years ahead: did the final filing fall in that year, given that it had not come sooner |
+# | **Hazard target** | For each of three years ahead: did the last filing fall in that year, given that it had not come sooner |
 #
 # Eight words describe a network and its training.
 #
@@ -787,11 +787,11 @@ class SequenceHazardNet(nn.Module):
 # **Reading.** `forward` multiplies the inputs and the states by the mask, so a masked year adds nothing to the average.
 # The last layer, `head`, turns the average into three numbers.
 #
-# Each of the three is a **hazard**: the chance that the final filing falls in that year, given that it has not come sooner.
+# Each of the three is a **hazard**: the chance that the last filing falls in that year, given that it has not come sooner.
 # The first year's hazard is asked of every row, and the second only of rows that did not fail in the first.
 #
 # The third has one more condition.
-# A fold may only use final filings up to the year before its validation year, so a training row whose third year runs past that edge is not asked about it.
+# A fold may only use last filings up to the year before its validation year, so a training row whose third year runs past that edge is not asked about it.
 #
 # The library's `hazard_loss` is the loss the training loop already uses: it averages over the questions that were asked and gives the rest no weight.
 #
@@ -800,7 +800,7 @@ class SequenceHazardNet(nn.Module):
 
 # %%
 def hazard_targets(rows: pd.DataFrame, known_to: int) -> tuple[torch.Tensor, torch.Tensor]:
-    """Three hazard targets for each row, and which of them are asked, with final filings known to `known_to`."""
+    """Three hazard targets for each row, and which of them are asked, with last filings known to `known_to`."""
     happened = np.column_stack(
         [rows["target_1"], rows["target"] - rows["target_1"], rows["target_3"] - rows["target"]]
     )

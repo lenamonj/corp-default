@@ -637,8 +637,8 @@ for ax, (column, title) in zip(axes.flat, panels):
     ax.set_xticks(range(first_year, last_year + 1, 6))
 viz.exhibit(
     fig,
-    f"A net loss in {profile['net_loss'].min():.0%} to {profile['net_loss'].max():.0%} of companies "
-    f"each year, and up to {profile['negative_equity'].max():.0%} owe more than they own",
+    f"Losses in {profile['net_loss'].min():.0%} to {profile['net_loss'].max():.0%} of companies a year, "
+    f"and up to {profile['negative_equity'].max():.0%} with negative equity",
     "All firm-years, by fiscal year.",
     SOURCE,
 )

@@ -243,7 +243,7 @@ viz.exhibit(
     f"{levels[SHOWN[-1]]:,}",
     "Predicted two-year failure probability. Each panel's colour runs from its own lowest value, "
     "pale, to its highest, dark.",
-    f"{SOURCE}; fitted on observation years to {train_last['year'].max()}",
+    f"{SOURCE}; fitted on fiscal years to {train_last['year'].max()}",
 )
 
 # %% [markdown]
@@ -486,7 +486,7 @@ viz.exhibit(
     f"{top_gap:.3f} apart",
     f"Each dot is one fit of {START_ROUNDS} rounds on the last fold. The standard deviation across "
     f"configurations is {by_config.std():.3f}.",
-    f"{SOURCE}; fitted on observation years to {train_last['year'].max()}",
+    f"{SOURCE}; fitted on fiscal years to {train_last['year'].max()}",
 )
 
 # %% [markdown]

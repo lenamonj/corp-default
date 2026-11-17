@@ -6,7 +6,7 @@ PANEL_END = 2018
 
 
 def build_label(frame: pd.DataFrame, horizon: int) -> pd.DataFrame:
-    """Label each firm-year: does the company's final filing fall 1 to `horizon` years later?
+    """Label each firm-year: does the company's last filing fall 1 to `horizon` years later?
 
     Drops the final-year rows of failed companies, which have no future to predict, and every
     row whose outcome window runs past PANEL_END, where the outcome is not yet known.

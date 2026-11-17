@@ -210,3 +210,12 @@ def test_words_on_an_axis_take_the_text_face_and_numbers_the_mono_face():
     numbers = {label.get_fontfamily()[0] for label in ax.get_xticklabels()}
     assert words == {matplotlib.rcParams["font.family"][0]}
     assert numbers.isdisjoint(words)
+
+
+def test_an_exhibit_refuses_a_title_or_note_that_runs_off_the_page():
+    viz.use_house_style()
+    for title, note in (("Short", "word " * 40), ("word " * 30, "Short.")):
+        fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 3))
+        ax.plot([0, 1])
+        with pytest.raises(ValueError, match="too long"):
+            viz.exhibit(fig, title.strip(), note.strip())

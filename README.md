@@ -60,7 +60,7 @@ The later years stay sealed until the last chapter, where each rung is scored on
 <!-- evidence:start -->
 <img src="assets/readme/landing/ladder.png" width="830" alt="The ladder on the holdout: the ROC-AUC of each of the rungs with its interval, and what each adds to the one below. The chosen model scores 0.815, +0.099 against the published Altman Z.">
 
-The holdout is the observation years 2014 to 2016: 9,954 firm-years with 160 failures, opened once.
+The holdout is the fiscal years 2014 to 2016: 9,954 firm-years with 160 failures, opened once.
 
 The chosen model, "All ratios, trees", has a ROC-AUC of 0.815 there, with a 95% interval from 0.779 to 0.850.
 On the walk-forward that chose it, it scored 0.776.

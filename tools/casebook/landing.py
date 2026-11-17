@@ -182,7 +182,7 @@ def evidence() -> str:
     return plate(
         f'<div class="cb-evidence"><img src="{(GALLERY / "ladder.png").as_uri()}" '
         f'width="734" height="{height}" alt=""></div>',
-        f"The ladder on the holdout, observation years {HOLDOUT[0]} to {HOLDOUT[1]}, from Chapter 7.",
+        f"The ladder on the holdout, fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}, from Chapter 7.",
     )
 
 
@@ -249,7 +249,7 @@ def evidence_words(claims: dict) -> str:
     return "\n".join(
         [
             (
-                f"The holdout is the observation years {HOLDOUT[0]} to {HOLDOUT[1]}: {claims['holdout_rows']} "
+                f"The holdout is the fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}: {claims['holdout_rows']} "
                 f"firm-years with {claims['holdout_failures']} failures, opened once."
             ),
             "",
