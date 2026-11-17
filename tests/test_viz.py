@@ -179,3 +179,22 @@ def test_an_exhibit_takes_a_colorbar_at_its_default_size():
     bar = fig.colorbar(image, ax=ax)
     viz.exhibit(fig, "A heatmap", "The bar runs most of the chart's height.")
     assert bar.ax.get_position().height > 0.75 * ax.get_position().height
+
+
+def test_the_accent_passes_the_checks_beside_every_hue():
+    hues = [viz.SURVIVED, *[viz.MODEL_COLORS[name] for name in ("trees", "networks")]]
+    assert failures([*hues, viz.ACCENT], SHEET) == []
+    assert failures([viz.FAILED, viz.ACCENT], SHEET) == []
+
+
+def test_every_model_input_and_item_has_a_name_a_reader_can_say():
+    from corp_default.data import COLUMN_MAP
+    from corp_default.features import feature_names
+
+    for name in [*feature_names(), *COLUMN_MAP.values()]:
+        shown = viz.label(name)
+        assert "_" not in shown and shown[0].isupper(), name
+    assert viz.label("mve_to_liabilities") == "Market value / liabilities"
+    assert viz.label("d2_liabilities_to_assets") == "Liabilities / assets, 2-year change"
+    assert viz.label("g1_market_cap") == "Market value, 1-year growth"
+    assert viz.label("loss_2y_ago") == "Loss two years ago"

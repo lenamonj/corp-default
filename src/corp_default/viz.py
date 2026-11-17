@@ -1,6 +1,7 @@
 """The chart house style: palettes, fonts, and the exhibit frame every chart in the casebook wears."""
 
 import dataclasses
+import re
 import warnings
 
 import matplotlib as mpl
@@ -34,6 +35,48 @@ MODEL_COLORS = {
     "networks": "#8C6FB9",
     "blend": "#16181D",
 }
+# Two groups that are neither outcomes nor models: ink for the subject, this hue for the other.
+ACCENT = "#0B8A6F"
+
+# What a chart calls each column. Code names stay in the code and in the data dictionaries.
+LABELS = {
+    "liabilities_to_assets": "Liabilities / assets",
+    "lt_debt_to_assets": "Long-term debt / assets",
+    "book_equity_to_assets": "Book equity / assets",
+    "debt_to_ebitda": "Debt / EBITDA",
+    "no_lt_debt": "No long-term debt",
+    "roa": "Return on assets",
+    "ebit_to_assets": "EBIT / assets",
+    "ebitda_to_assets": "EBITDA / assets",
+    "net_margin": "Net margin",
+    "ebitda_margin": "EBITDA margin",
+    "gross_margin": "Gross margin",
+    "negative_ebitda": "Negative EBITDA",
+    "retained_earnings_to_assets": "Retained earnings / assets",
+    "current_ratio": "Current ratio",
+    "quick_ratio": "Quick ratio",
+    "working_capital_to_assets": "Working capital / assets",
+    "current_assets_to_assets": "Current assets / assets",
+    "current_liabilities_to_liabilities": "Current liabilities / liabilities",
+    "ffo_to_liabilities": "Funds from operations / liabilities",
+    "asset_turnover": "Sales / assets",
+    "mve_to_liabilities": "Market value / liabilities",
+    "market_to_book_assets": "Market value plus liabilities / assets",
+    "log_assets": "Total assets (log)",
+    "log_market_cap": "Market value (log)",
+    "years_observed": "Years observed",
+    "cogs": "Cost of goods sold",
+    "depreciation_amort": "Depreciation and amortization",
+    "ebitda": "EBITDA",
+    "ebit": "EBIT",
+    "market_cap": "Market value",
+    "total_lt_debt": "Long-term debt",
+    "total_current_liabilities": "Current liabilities",
+    "total_receivables": "Receivables",
+    "sales": "Sales",
+    "assets": "Total assets",
+}
+_LAG_WORDS = {"1": "one year", "2": "two years"}
 
 EXHIBIT_WIDTH_IN = 8.0  # 1200 px at 150 dpi
 DPI = 150
@@ -181,6 +224,18 @@ def exhibit(
     if save_as:
         GALLERY.mkdir(parents=True, exist_ok=True)
         fig.savefig(GALLERY / f"{save_as}.png")
+
+
+def label(name: str) -> str:
+    """The name a chart shows for a column: `d2_roa` is "Return on assets, 2-year change"."""
+    if name in LABELS:
+        return LABELS[name]
+    if match := re.fullmatch(r"([dg])([12])_(.+)", name):
+        kind, lag, base = match.groups()
+        return f"{label(base)}, {lag}-year {'change' if kind == 'd' else 'growth'}"
+    if match := re.fullmatch(r"loss_([12])y_ago", name):
+        return f"Loss {_LAG_WORDS[match.group(1)]} ago"
+    return name.replace("_", " ").capitalize()
 
 
 def plain_number(value: float, position: int | None = None) -> str:

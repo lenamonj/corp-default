@@ -20,7 +20,7 @@ DISCLAIMER = (
     "Nothing here is investment advice or a recommendation to buy or sell any security",
     "The data is a public research dataset with anonymised company names",
 )
-MAX_PARAGRAPH = 2  # sentences, written one to a line
+MAX_PARAGRAPH = 3  # sentences, written one to a line
 NOT_PROSE = re.compile(r"\||- |#|>|<|!\[|\[!\[|\d+\. ")  # tables, lists, headings, quotes, markup
 PICTURE = re.compile(r"!\[([^\]]*)\]\(data:image/png;base64,([^)]+)\)")
 NEXT_CARD = re.compile(r"\[!\[Next: [^\]]*\]\(data:image/png;base64,[^)]+\)\]\(([^)]+)\)")
@@ -178,7 +178,7 @@ def kernel_line(ch: Chapter) -> list[str]:
 
 
 def short_paragraphs(ch: Chapter) -> list[str]:
-    """A paragraph is one or two sentences. Prose is written one sentence to a line, so a
+    """A paragraph is one or two sentences, or three where the third completes an argument. Prose is written one sentence to a line, so a
     paragraph is a run of prose lines with no blank line between them."""
     faults = []
     for place, cell in enumerate(ch.cells):
