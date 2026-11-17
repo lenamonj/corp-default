@@ -831,8 +831,13 @@ budgets = pd.DataFrame(
 for share in (1, 10):
     store.put(f"holdout_capture_{share}", top[f"capture_{share}"])
 store.put("classic_capture_5", board.loc[CLASSIC, "capture_5"])
-store.put("found_5", round(top["capture_5"] * sealed["target"].sum()))
-store.put("reviewed_5", round(0.05 * len(sealed)))
+# The desk's list is every firm-year above the 95th percentile of its year, the list the case files use.
+on_list = verdict[CHOSEN]["pct"] > 0.95
+found = int((on_list & (verdict[CHOSEN]["target"] == 1)).sum())
+# The list finds the same failures as the capture rate at the middle budget. Checked here.
+assert found == round(top["capture_5"] * sealed["target"].sum())
+store.put("found_5", found)
+store.put("reviewed_5", int(on_list.sum()))
 
 viz.exhibit(
     fig,
@@ -847,7 +852,7 @@ budgets.round(3)
 # **Reading.** In Exhibit 5 the chosen model's curve climbs at once.
 # The top hundredth of each year holds {{ch7.holdout_capture_1:.1%}} of the failures, the top twentieth {{ch7.holdout_capture_5:.1%}}, and the top tenth {{ch7.holdout_capture_10:.1%}}.
 #
-# In round numbers, a desk that read {{ch7.reviewed_5}} of the {{ch7.n_holdout:,}} firm-years would have had {{ch7.found_5}} of the {{ch7.holdout_failures}} failures on its list.
+# A desk that read the top twentieth of each year, {{ch7.reviewed_5}} of the {{ch7.n_holdout:,}} firm-years, would have had {{ch7.found_5}} of the {{ch7.holdout_failures}} failures on its list.
 #
 # The published score finds {{ch7.classic_capture_5:.1%}} at the same budget, which is no better than names picked at random.
 # Its ROC-AUC comes from ordering the broad middle, and it fails where a desk looks, at the top.
@@ -1261,7 +1266,7 @@ viz.exhibit(
 files.round(3)
 
 # %% [markdown]
-# **Reading.** The model flagged {{ch7.n_caught}} of the failures and missed {{ch7.n_missed}}, and {{ch7.n_alarms}} of its flags did not fail within two years.
+# **Reading.** Of the {{ch7.reviewed_5}} firm-years on the desk's list, {{ch7.n_caught}} failed within two years and {{ch7.n_alarms}} did not, and the list missed {{ch7.n_missed}} failures.
 #
 # The caught case ranked above {{ch7.caught_pct:.0%}} of its year in {{ch7.caught_year}} and filed for the last time in {{ch7.caught_last}}.
 # In Exhibit 11 its rank climbs for three years before that, and its largest push is a market value that is a small fraction of its liabilities.
