@@ -24,8 +24,8 @@ def test_font_loads_and_has_its_licence_beside_it(folder, name):
     path = FONTS / folder / name
     assert path.exists(), path
     assert font_manager.FontProperties(fname=path).get_name() == FAMILY_NAMES[folder]
-    licence = FONTS / folder / "OFL.txt"
-    assert "SIL Open Font License" in licence.read_text(encoding="utf-8")
+    license = FONTS / folder / "OFL.txt"
+    assert "SIL Open Font License" in license.read_text(encoding="utf-8")
 
 
 @pytest.fixture(scope="module")
@@ -146,7 +146,7 @@ def test_pitfall_draws(studio, tmp_path):
         "1,234",
         "MIS-PAIRED BY A CALENDAR JOIN",
         "0",
-        "A shift pairs neighbours in the file, not neighbours in time.",
+        "A shift pairs neighbors in the file, not neighbors in time.",
     )
     assert _width(studio.png(html, tmp_path / "pitfall.png")) == 2400
 
@@ -229,3 +229,66 @@ def test_mark_curve_marks_the_chapter_from_the_first_to_the_last(toy_mark):
     assert here(1) == 96 and here(7) == 1136
     assert here(4) == pytest.approx((96 + 1136) / 2)
     assert here(None) is None
+
+
+VERDICT = {
+    "period": "SEALED HOLDOUT, FISCAL YEARS 2014 TO 2016",
+    "figures": [
+        ("0.815", "ROC-AUC OF THE CHOSEN MODEL", "95% INTERVAL 0.779 TO 0.850"),
+        ("+0.099", "AHEAD OF ALTMAN Z", "95% INTERVAL +0.063 TO +0.136"),
+        ("35.6%", "OF FAILURES IN THE RISKIEST 5% OF A YEAR", "95% INTERVAL 27.0% TO 43.6%"),
+    ],
+    "trust": "The order of one year's review list.",
+    "distrust": "The probability it gives in any single year.",
+    "foot": ("9,954 firm-years and 160 failures, sealed until this chapter.", "WALK-FORWARD 0.776"),
+    "alt": "The verdict: 0.815, +0.099 ahead of Altman Z.",
+}
+
+
+def _tape(**changes):
+    from tools.casebook.components import yardstick
+
+    marks = {
+        "reference": ("ALTMAN Z", 0.716, 0.676, 0.753),
+        "chosen": ("ALL RATIOS, TREES", 0.815, 0.779, 0.850),
+    }
+    return yardstick(0.5, 1.0, ("COIN FLIP", "PERFECT ORDER"), **{**marks, **changes})
+
+
+def test_verdict_draws_and_carries_its_own_alt_text(studio, tmp_path):
+    from tools.casebook.components import verdict
+
+    html = verdict(tape=_tape(), **VERDICT)
+    assert 'data-alt="The verdict: 0.815, +0.099 ahead of Altman Z."' in html
+    assert _width(studio.png(html, tmp_path / "verdict.png")) == 2400
+
+
+def test_verdict_takes_exactly_three_figures():
+    from tools.casebook.components import verdict
+
+    with pytest.raises(ValueError, match="three figures"):
+        verdict(tape=_tape(), **{**VERDICT, "figures": VERDICT["figures"][:2]})
+
+
+def test_yardstick_places_a_score_by_its_value():
+    tape = _tape()
+    assert 'cx="463.1"' in tape  # 0.716 on a scale from 0.5 to 1.0, 1,072 px wide
+    assert 'cx="675.4"' in tape
+
+
+def test_yardstick_refuses_a_score_off_the_scale():
+    with pytest.raises(ValueError, match="off the scale"):
+        _tape(chosen=("ALL RATIOS, TREES", 1.2, 0.779, 0.850))
+
+
+def test_the_casebook_verdict_quotes_the_results_file():
+    import json
+
+    from chapters.diagrams import verdict
+    from corp_default import store
+
+    claims = json.loads((store.RESULTS / "claims.json").read_text(encoding="utf-8"))
+    html = verdict()
+    for key in ("holdout_auc", "primary_step", "capture_5", "holdout_rows", "walk_forward_auc"):
+        assert claims[key] in html, key
+    assert html.count('class="cb-figure"') == 3

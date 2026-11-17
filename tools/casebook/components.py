@@ -87,7 +87,7 @@ def house_mark(events: pd.DataFrame) -> dict:
 
     It is the share of companies not yet failed: one minus the cumulative incidence of failure,
     with other exits as a competing risk, on an axis truncated to the nearest 0.05 below the curve
-    and labelled at both ends.
+    and labeled at both ends.
     """
     incidence = cumulative_incidence(events["duration"], events["event"])
     not_failed = 1 - incidence["cif_failed"]
@@ -207,7 +207,7 @@ def box(x: int, y: int, w: int, h: int, kind: str = "") -> str:
 
 
 def words(x: int, y: int, w: int, text: str, kind: str = "") -> str:
-    """Words in a diagram, centred in a strip w wide. kind: b (bold), m (mono), s (small), left."""
+    """Words in a diagram, centered in a strip w wide. kind: b (bold), m (mono), s (small), left."""
     return f'<div class="cb-t {_cls(kind)}" style="left:{x}px;top:{y}px;width:{w}px">{escape(text)}</div>'
 
 
@@ -252,4 +252,90 @@ def next_card(label: str, plate: str, title: str, line: str) -> str:
         f'<span class="cb-title">{escape(title)}</span><span class="cb-line">{escape(line)}</span></div>'
         f'<svg class="cb-go" width="56" height="56" viewBox="0 0 56 56">'
         f'<path d="M16 28 H38 M30 20 L38 28 L30 36"/></svg></div>'
+    )
+
+
+def yardstick(
+    low: float,
+    high: float,
+    ends: tuple[str, str],
+    reference: tuple[str, float, float, float],
+    chosen: tuple[str, float, float, float],
+    width: int = WIDTH - 128,
+) -> str:
+    """A score's whole scale as one ruled line with two scores on it, each (name, value, low, high).
+
+    The reference is drawn in the neutral and the chosen score in the tree models' hue, each as a
+    dot on the band of its interval, so the distance between them is read on the scale itself.
+    """
+
+    def x_of(value: float) -> float:
+        if not low <= value <= high:
+            raise ValueError(f"{value} is off the scale, which runs from {low} to {high}")
+        return width * (value - low) / (high - low)
+
+    rail = 62
+    drawn = [f'<line class="cb-rail" x1="0" x2="{width}" y1="{rail}" y2="{rail}"/>']
+    steps = round((high - low) * 10)
+    for k in range(steps + 1):
+        value = low + k / 10
+        x = width * k / steps
+        anchor, word = "middle", f"{value:.2f}"
+        if k == 0:
+            anchor, word = "start", f"{value:.2f}  {ends[0]}"
+        elif k == steps:
+            anchor, word = "end", f"{ends[1]}  {value:.2f}"
+        drawn.append(
+            f'<line class="cb-notch" x1="{x:.1f}" x2="{x:.1f}" y1="{rail}" y2="{rail + 8}"/>'
+            f'<text class="cb-scale" x="{x:.1f}" y="{rail + 28}" text-anchor="{anchor}" '
+            f'xml:space="preserve">{escape(word)}</text>'
+        )
+    for kind, (name, value, lo, hi) in (("reference", reference), ("chosen", chosen)):
+        x = x_of(value)
+        drawn.append(
+            f'<line class="{_cls(f"band {kind}")}" x1="{x_of(lo):.1f}" x2="{x_of(hi):.1f}" '
+            f'y1="{rail}" y2="{rail}"/>'
+            f'<circle class="{_cls(f"dot {kind}")}" cx="{x:.1f}" cy="{rail}" r="7"/>'
+            f'<text class="{_cls(f"who {kind}")}" x="{x:.1f}" y="{rail - 36}" text-anchor="middle">'
+            f"{escape(name)}</text>"
+            f'<text class="{_cls(f"score {kind}")}" x="{x:.1f}" y="{rail - 17}" text-anchor="middle">'
+            f"{value:.3f}</text>"
+        )
+    return (
+        f'<svg class="cb-yardstick" width="{width}" height="100" viewBox="0 0 {width} 100">'
+        f"{''.join(drawn)}</svg>"
+    )
+
+
+def verdict(
+    period: str,
+    figures: list[tuple[str, str, str]],
+    tape: str,
+    trust: str,
+    distrust: str,
+    foot: tuple[str, str],
+    alt: str,
+) -> str:
+    """The plate that closes the casebook: three computed figures, the yardstick, and two rulings.
+
+    Each figure is (value, label, interval). The plate is on carbon, as the cover is, and carries
+    its own alt text, because it has no caption to stand for it.
+    """
+    if len(figures) != 3:
+        raise ValueError(f"a verdict plate takes three figures, not {len(figures)}")
+    shown = "".join(
+        f'<div class="cb-figure"><span class="cb-value">{escape(value)}</span>'
+        f'<span class="cb-label">{escape(label)}</span>'
+        f'<span class="cb-range">{escape(spread)}</span></div>'
+        for value, label, spread in figures
+    )
+    return (
+        f'<div class="cb cb-verdict" data-alt="{escape(alt)}"><header><span>THE VERDICT</span>'
+        f"<span>{escape(period)}</span></header>"
+        f'<div class="cb-figures">{shown}</div><div class="cb-tape">{tape}</div>'
+        f'<div class="cb-rulings"><div class="cb-ruling cb-trust"><span class="cb-tag">TRUST</span>'
+        f'<span class="cb-says">{escape(trust)}</span></div>'
+        f'<div class="cb-ruling cb-distrust"><span class="cb-tag">DO NOT TRUST</span>'
+        f'<span class="cb-says">{escape(distrust)}</span></div></div>'
+        f"<footer><span>{escape(foot[0])}</span><span>{escape(foot[1])}</span></footer></div>"
     )

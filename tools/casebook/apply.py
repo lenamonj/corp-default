@@ -82,6 +82,14 @@ def _about(count: int) -> str:
     return f"About {count} minute{'' if count == 1 else 's'}."
 
 
+def diagram_alt(drawn: str) -> str:
+    """What a diagram says: its own alt text where it carries one, and its caption otherwise."""
+    own = re.search(r'data-alt="([^"]*)"', drawn)
+    if own:
+        return html.unescape(own.group(1))
+    return f"Diagram: {html.unescape(re.search(r'class="cb-cap">([^<]*)<', drawn).group(1))}"
+
+
 def apply(nb, plan: dict, mark: dict, studio: Studio) -> tuple[int, int, int]:
     """Put the notebook's cells into the design, in place. Returns its parts, exhibits, and minutes."""
     unknown, missing = set(plan) - KEYS, REQUIRED - set(plan)
@@ -148,8 +156,7 @@ def apply(nb, plan: dict, mark: dict, studio: Studio) -> tuple[int, int, int]:
         def plate(kind: str, key: str) -> str:
             if kind == "diagram":
                 drawn = getattr(diagrams, key)()
-                caption = html.unescape(re.search(r'class="cb-cap">([^<]*)<', drawn).group(1))
-                return picture(drawn, f"Diagram: {caption}")
+                return picture(drawn, diagram_alt(drawn))
             item = pitfalls[key]
             drawn = c.pitfall(
                 item["name"],

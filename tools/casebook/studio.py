@@ -63,7 +63,7 @@ class Studio:
         self._folder.cleanup()
 
     def png(self, html: str, out: Path, width: int = WIDTH, colors: int = 256) -> Path:
-        """Draw one component `width` px wide and save it at twice that, with at most `colors` colours."""
+        """Draw one component `width` px wide and save it at twice that, with at most `colors` colors."""
         page_file = Path(self._folder.name) / "component.html"
         page_file.write_text(
             f'<!doctype html><html><head><meta charset="utf-8">'
@@ -88,8 +88,8 @@ class Studio:
         out.parent.mkdir(parents=True, exist_ok=True)
         block.screenshot(path=str(out))
         image = Image.open(out).convert("RGB")
-        quantised = image.quantize(
+        quantized = image.quantize(
             colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE
         )
-        quantised.save(out, optimize=True)
+        quantized.save(out, optimize=True)
         return out

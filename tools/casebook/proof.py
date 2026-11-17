@@ -2,7 +2,7 @@
 
     uv run python -m tools.casebook.proof
 
-Writes artifacts/proof/, plus artifacts/proof/dark/ with each picture on GitHub's dark page colour.
+Writes artifacts/proof/, plus artifacts/proof/dark/ with each picture on GitHub's dark page color.
 Exhibits use development years only (observation years up to 2011).
 """
 
@@ -18,7 +18,7 @@ from PIL import Image
 from scipy.cluster import hierarchy
 from scipy.spatial.distance import squareform
 
-from chapters.diagrams import label_timeline
+from chapters.diagrams import label_timeline, verdict
 from corp_default import viz
 from corp_default.data import REPO, load_raw
 from corp_default.features import FAMILIES, add_ratios
@@ -182,9 +182,9 @@ def exhibit_event_study(frame: pd.DataFrame, out) -> None:
     plt.close(fig)
 
 
-def exhibit_roa_rate(labelled: pd.DataFrame, out) -> None:
+def exhibit_roa_rate(labeled: pd.DataFrame, out) -> None:
     """Two-year failure rate by decile of return on assets, with Wilson intervals."""
-    dev = development(labelled).dropna(subset=["roa"])
+    dev = development(labeled).dropna(subset=["roa"])
     deciles = pd.qcut(dev["roa"], 10, labels=False) + 1
     table = dev.groupby(deciles)["target"].agg(["sum", "size"])
     rates = table["sum"] / table["size"]
@@ -276,7 +276,7 @@ def exhibit_correlation(frame: pd.DataFrame, out) -> None:
 
 
 def on_dark(path) -> None:
-    """The picture on GitHub's dark page colour, with a margin, to check its edges."""
+    """The picture on GitHub's dark page color, with a margin, to check its edges."""
     image = Image.open(path).convert("RGB")
     canvas = Image.new("RGB", (image.width + 160, image.height + 160), DARK_PAGE)
     canvas.paste(image, (80, 80))
@@ -322,6 +322,7 @@ def main() -> None:
             "INDEPENDENT ITEMS", "14", "SAMPLE numbers. Four columns are sums of the others.",
         ), OUT / "pitfall_sample_columns.png"))  # fmt: skip
         written.append(studio.png(label_timeline(), OUT / "diagram_label_timeline.png"))
+        written.append(studio.png(verdict(), OUT / "verdict.png"))
         written.append(studio.png(next_card("NEXT", "CHAPTER 2", "The Event",
                                             "What does failed mean, and when did it happen?"),
                                   OUT / "next_card.png"))  # fmt: skip

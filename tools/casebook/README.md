@@ -8,7 +8,7 @@ The reference is [Chapter 1: The Panel](../../notebooks/01_the_panel.ipynb). Whe
 
 > Nothing here is investment advice or a recommendation to buy or sell any security
 
-> The data is a public research dataset with anonymised company names
+> The data is a public research dataset with anonymized company names
 
 ## The one rule
 
@@ -33,6 +33,7 @@ A chart is neither typed nor drawn here. It is the real output of a code cell, i
 | Ink | `#16181D`, slate `#4F5560`, mist `#8B909A` | Text on sheet |
 | Signal | `#D9482B`, bright `#FF6A4D` on carbon | Failure, a pitfall, and the house mark |
 | Steel | `#295F92`, bright `#8FB1D1` on carbon | Survival, and place ("you are here") |
+| Trees | `#B48219`, bright `#E3AE45` on carbon | The tree models, and the chosen model on the verdict plate |
 
 Charts use two palettes that never share a chart. Outcome charts: signal for failed, steel for survived, `#878C96` for censored or any other exit. Model charts: classic scores `#878C96`, logistic `#295F92`, trees `#B48219`, networks `#8C6FB9`, blend `#16181D`.
 
@@ -42,9 +43,9 @@ Charts use two palettes that never share a chart. Outcome charts: signal for fai
 | Public Sans, weights 400 and 600 | Labels, captions, all chart text |
 | JetBrains Mono, weights 500 and 700 | Numbers, tags, tick labels, times |
 
-All three are under the SIL Open Font License and live in `assets/fonts` as static files with their licences. The same files serve the drawn components and the charts. Corners are square and nothing casts a shadow: hairlines and flat colour only.
+All three are under the SIL Open Font License and live in `assets/fonts` as static files with their licenses. The same files serve the drawn components and the charts. Corners are square and nothing casts a shadow: hairlines and flat color only.
 
-**The house mark.** One step curve is the mark of the casebook. It is the share of this dataset's companies not yet failed: one minus the cumulative incidence of failure, with every other exit as a competing risk, on an axis that is truncated and labelled at both ends. `components.house_mark` computes it from the event table and `components.mark_curve` draws it. It sits on every cover with a marker at the chapter's place, first chapter at the left and last at the right. It is never typed and never redrawn by hand.
+**The house mark.** One step curve is the mark of the casebook. It is the share of this dataset's companies not yet failed: one minus the cumulative incidence of failure, with every other exit as a competing risk, on an axis that is truncated and labeled at both ends. `components.house_mark` computes it from the event table and `components.mark_curve` draws it. It sits on every cover with a marker at the chapter's place, first chapter at the left and last at the right. It is never typed and never redrawn by hand.
 
 ## Anatomy of a chapter
 
@@ -62,14 +63,15 @@ A chapter is built in this order. "Drawn" parts come from `components.py` by way
 | Step | Typed, code, typed | A line starting `Q. `, a code cell, then `**Reading.**` and one or two lines on what the output shows. A bold sentence hands off to the next step. |
 | Predict | Typed | `**Predict N.**` asks the reader to commit to a number before a key result. At least two a chapter. |
 | Exhibit | A code cell's output | A chart framed by `viz.exhibit`: an EXHIBIT n tag, a title that states the finding, with its number when the finding is a number (computed in the title's f-string, never typed), one line on what to notice, a source line. Numbered from 1 in each chapter. The text refers to it as "Exhibit 4". |
-| Pitfall | Drawn: `pitfall` | Where a naive analysis gives a different number: the naive number beside the honest one, each labelled, with one line on why. Both are computed in the chapter. At least one a chapter from Chapter 2 on. |
+| Pitfall | Drawn: `pitfall` | Where a naive analysis gives a different number: the naive number beside the honest one, each labeled, with one line on why. Both are computed in the chapter. At least one a chapter from Chapter 2 on. |
 | Diagram | Drawn: a function in `chapters/diagrams.py` | Boxes, words, arrows, and time bars on a plate with its caption. |
+| Verdict | Drawn: `verdict`, by the diagram `verdict` | Chapter 7 only, the last picture of the lesson: three computed figures, the two scores on the yardstick, and what to trust and not to trust. On carbon, as the cover is. |
 | Check | Typed | `**Check.**`, one question, and the answer folded under "Show the answer". At least two a chapter. |
 | Findings | Typed | `# Findings`: a numbered list, each item citing its exhibit. |
 | Your Turn | Typed | `# Your Turn`: three extensions, each with its hint folded under "Hint". |
 | Next | Drawn: `next_card` | The last cell: the card to the next chapter, as a link. Chapter 7 links to the landing page. |
 
-Prose rules: a paragraph is one or two sentences, then a blank line, because a reader of a notebook does not follow a long run of sentences; one sentence to a line in the source; bullets only for parallel items under a lead-in; a term is bold where it is first named; no em dashes or en dashes; no emojis; no version history; no number that is not a placeholder.
+Prose rules: a paragraph is one or two sentences, with a third only where it completes an argument, then a blank line, because a reader of a notebook does not follow a long run of sentences; one sentence to a line in the source; bullets only for parallel items under a lead-in; a term is bold where it is first named; no em dashes or en dashes; no emojis; no version history; no number that is not a placeholder.
 
 ## Numbers
 
@@ -90,12 +92,14 @@ Each function in `components.py` returns the HTML of one component, styled by `d
 | `stage`, `box`, `words`, `arrows`, `timebar` | A diagram, placed by position. `timebar` kinds: `train`, `embargo`, `valid`, `holdout`, `label`. |
 | `figure_plate(body, caption)` | The sheet frame a diagram sits in. |
 | `next_card(label, plate, title, line)` | The card to the next chapter. |
+| `yardstick(low, high, ends, reference, chosen)` | A score's whole scale as one ruled line, with two scores on it, each a dot on the band of its interval. Refuses a score off the scale. |
+| `verdict(period, figures, tape, trust, distrust, foot, alt)` | The verdict plate: three figures, a yardstick, two rulings. It carries its own alt text. |
 
 ## Exhibits
 
 `viz.use_house_style()` sets the matplotlib style, registers the fonts, and starts exhibit numbering at 1. `viz.exhibit(fig, title, note, source, save_as)` frames a finished chart. Give a figure `figsize=(viz.EXHIBIT_WIDTH_IN, height)`: 8 inches at 150 dpi is 1200 px.
 
-Chart rules: one message to an exhibit; direct labels in place of a legend where they fit; a signed quantity on a symmetric-log axis (`viz.symlog_axis`); a log axis set with `viz.log_axis`, so its ticks read as numbers a reader can say (10,000 and 0.01), never as powers of ten; an interval wherever a rate or a metric is shown; no dual axes; no default colour cycle, so every colour is a choice.
+Chart rules: one message to an exhibit; direct labels in place of a legend where they fit; a signed quantity on a symmetric-log axis (`viz.symlog_axis`); a log axis set with `viz.log_axis`, so its ticks read as numbers a reader can say (10,000 and 0.01), never as powers of ten; an interval wherever a rate or a metric is shown; no dual axes; no default color cycle, so every color is a choice.
 
 Jupyter crops a figure to its ink by default, which would give every exhibit a different width. `use_house_style` replaces that with the whole canvas, and gives each exhibit its alt text: `Exhibit n: title. note`. The tests, the time rule, and `check --text` all read an exhibit by that alt text.
 
@@ -138,7 +142,7 @@ A plan, `chapters/plans/NN.json`, holds only what a person writes:
 | `pitfalls` | For each `<!-- pitfall: key -->`: `name`, `naive_label`, `naive_value`, `honest_label`, `honest_value`, `why`. Labels are typed in sentence case and drawn in capitals. Values are placeholders. |
 | `next` | `title` and `line` of the next card. The link is the next chapter's notebook, named from its number and title. |
 
-A diagram needs no plan entry: `<!-- diagram: name -->` calls the function `name` in `chapters/diagrams.py`, and its caption is its alt text.
+A diagram needs no plan entry: `<!-- diagram: name -->` calls the function `name` in `chapters/diagrams.py`, and its caption is its alt text. A diagram with no caption carries its own alt text in a `data-alt` attribute on its root, as the verdict plate does.
 
 When the plan and the notebook disagree, the build stops with one sentence that says what to change: a goal count that does not match the parts, a pitfall marked and not described, a title that differs, a key the plan does not take.
 
@@ -146,12 +150,12 @@ When the plan and the notebook disagree, the build stops with one sentence that 
 
 1. A drawn component is embedded as a markdown image, `![alt](data:image/png;base64,...)`. No `<img>` tag and no `style` attribute in a cell, ever.
 2. Every drawn component is 1200 px wide and drawn at 2400 px. Every exhibit is 1200 px wide. So every picture spans the column.
-3. Every picture has an opaque background. Nothing relies on the colour of the page behind it, and a carbon component carries a 1 px carbon-rule edge so it keeps its outline on a dark page.
-4. Every picture has alt text that says what the picture says. An opener's is its part, goal, and minutes. A pitfall's carries both numbers. An exhibit's is its number, title, and note.
+3. Every picture has an opaque background. Nothing relies on the color of the page behind it, and a carbon component carries a 1 px carbon-rule edge so it keeps its outline on a dark page.
+4. Every picture has alt text that says what the picture says. An opener's is its part, goal, and minutes. A pitfall's carries both numbers. The verdict plate's carries its three figures and both rulings. An exhibit's is its number, title, and note.
 5. A component's height is a whole number of pixels. `Studio.png` refuses anything else, because a part pixel shows as a stray line.
 6. Text inside a picture is short: a label, a caption, a goal. A sentence that teaches is typed. A component refuses words that do not fit: shorten the words, never shrink the type.
 7. Numbers on a picture are computed, never typed.
-8. Colour carries one meaning each: signal is failure, steel is survival and place, and the model palette never appears on an outcome chart.
+8. Color carries one meaning each: signal is failure, steel is survival and place, and the model palette never appears on an outcome chart.
 
 Install the author tools once: `uv sync`, then `uv run python -m playwright install chromium`.
 

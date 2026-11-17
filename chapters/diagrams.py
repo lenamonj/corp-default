@@ -1,6 +1,9 @@
 """The casebook's drawn diagrams, one function each. Each returns the HTML of a figure plate."""
 
+import json
+
 from corp_default import store
+from corp_default.evaluate import BUDGETS
 from corp_default.labels import PANEL_END
 from corp_default.splits import (
     CRISIS_FOLDS,
@@ -10,6 +13,7 @@ from corp_default.splits import (
     development,
     walk_forward_folds,
 )
+from tools.casebook import components
 from tools.casebook.components import arrows, box, figure_plate, stage, timebar, words
 
 YEAR_WIDTH = 110
@@ -208,4 +212,61 @@ def sequence_tensor() -> str:
     return figure_plate(
         stage(1000, 34 + len(rows) * 104 - 30, *parts),
         "A row becomes five years of ratios, oldest first, and a mask that marks the years filed.",
+    )
+
+
+def verdict() -> str:
+    """The casebook's result on one plate, read from the results Chapter 7 writes."""
+    claims, metrics = (
+        json.loads((store.RESULTS / f"{name}.json").read_text(encoding="utf-8"))
+        for name in ("claims", "metrics")
+    )
+    board = {row["model"]: row for row in metrics["scoreboard"]}
+    classic = metrics["scoreboard"][0]  # the first rung is the published score
+    chosen = board[claims["chosen_model"]]
+    budget = f"{BUDGETS[1]:.0%}"
+    figures = [
+        (claims["holdout_auc"], "ROC-AUC of the chosen model", claims["holdout_auc_interval"]),
+        (claims["primary_step"], f"ahead of {classic['model']}", claims["primary_step_interval"]),
+        (
+            claims["capture_5"],
+            f"of failures in the riskiest {budget} of a year",
+            claims["capture_5_interval"],
+        ),
+    ]
+    trust, distrust = "The order of one year's review list.", "Its probability in any single year."
+    rows = f"{claims['holdout_rows']} firm-years and {claims['holdout_failures']} failures"
+    return components.verdict(
+        f"SEALED HOLDOUT, FISCAL YEARS {HOLDOUT[0]} TO {HOLDOUT[1]}",
+        [
+            (value, label.upper(), f"95% INTERVAL {spread.upper()}")
+            for value, label, spread in figures
+        ],
+        components.yardstick(
+            0.5,
+            1.0,
+            ("COIN FLIP", "PERFECT ORDER"),
+            reference=(
+                classic["model"].upper(),
+                *(classic[k] for k in ("roc_auc", "roc_auc_lo", "roc_auc_hi")),
+            ),
+            chosen=(
+                chosen["model"].upper(),
+                *(chosen[k] for k in ("roc_auc", "roc_auc_lo", "roc_auc_hi")),
+            ),
+        ),
+        trust,
+        distrust,
+        (
+            f"{rows}, sealed until this chapter.",
+            f"WALK-FORWARD ESTIMATE {claims['walk_forward_auc']}",
+        ),
+        alt=(
+            f"The verdict on the sealed holdout, fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}, {rows}. "
+            + " ".join(
+                f"{label[0].upper()}{label[1:]}: {value}, 95% interval {spread}."
+                for value, label, spread in figures
+            )
+            + f" Trust: {trust} Do not trust: {distrust}"
+        ),
     )

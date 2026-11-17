@@ -310,3 +310,15 @@ def test_check_text_shows_a_picture_as_its_alt_text(built):
     assert "[exhibit: Exhibit 1: One value towers over the rest." in text
     assert "The values sum to 42." in text
     assert "base64" not in text
+
+
+def test_a_diagram_is_described_by_its_caption_unless_it_carries_its_own_alt_text():
+    from tools.casebook.apply import diagram_alt
+    from tools.casebook.components import figure_plate
+
+    assert diagram_alt(figure_plate("", "One firm-year & its label.")) == (
+        "Diagram: One firm-year & its label."
+    )
+    assert diagram_alt('<div class="cb" data-alt="The verdict: A &amp; B."></div>') == (
+        "The verdict: A & B."
+    )
