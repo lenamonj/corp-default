@@ -27,7 +27,7 @@
 # - keep every fitted number, down to a clipping bound, inside the training rows;
 # - score a ranking the way a credit desk uses it;
 # - put an interval on a score, and on the difference between two scores;
-# - measure a classic score, refit it, and read the first rungs of the ladder.
+# - measure a classic score, refit it, and compare the first three models.
 
 # %% [markdown]
 # ## What You Need
@@ -78,7 +78,7 @@ from collections.abc import Callable, Iterator
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.ticker import MultipleLocator, PercentFormatter
+from matplotlib.ticker import MaxNLocator, MultipleLocator, PercentFormatter
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
@@ -428,7 +428,7 @@ fold_rows
 
 # %% [markdown]
 # Each fold has its own model, so its scores are on a scale of their own.
-# A desk also ranks the firms of one year against each other, not against other years.
+# A desk also ranks the companies of one year against each other, not against other years.
 #
 # So every score becomes its percentile within its year, `pct`, and the percentiles of all folds are pooled.
 #
@@ -511,15 +511,12 @@ clipped.round(4)
 # It is still a leak, and keeping it out costs one line of code.
 
 # %% [markdown]
-# <!-- pitfall: bounds -->
-
-# %% [markdown]
 # **Next, how to put a number on a ranking.**
 
 # %% [markdown]
 # # Ranking Metrics
 #
-# A default model has one job, which is to rank: the firms most likely to fail come first.
+# A default model has one job, which is to rank: the companies most likely to fail come first.
 # The simplest ranking uses one ratio, and the next three parts use leverage, `liabilities_to_assets`, so that the yardstick is ready before any model is.
 #
 # Three numbers sum up a ranking:
@@ -576,7 +573,6 @@ by_fold.round(4)
 #
 # It also moves with the base rate, from {{ch4.ap_low:.3f}} to {{ch4.ap_top:.3f}} across the folds.
 # The fold of {{ch4.ap_top_year}} has the highest base rate and the highest average precision, and not the highest ROC-AUC.
-#
 # So average precision compares models on the same rows, and never one year with another.
 #
 # One trap sits beside it.
@@ -595,7 +591,7 @@ by_fold.round(4)
 # # The Unit of a Credit Desk
 #
 # A desk cannot review every company.
-# It reviews the firms a model ranks worst, up to a **budget**, and the casebook uses budgets of {{ch4.budgets}} of the firms.
+# It reviews the firm-years a model ranks worst, up to a **budget**, and the casebook uses budgets of {{ch4.budgets}} of each year's firm-years.
 #
 # The **capture rate** is the share of all the failures that fall inside the budget.
 #
@@ -682,11 +678,11 @@ top.set_title("The three budgets")
 for ax in (whole, top):
     ax.xaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
     ax.yaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
-    ax.set_xlabel("Firms reviewed, riskiest first")
+    ax.set_xlabel("Firm-years reviewed, riskiest first")
 whole.set_ylabel("Failures found")
 viz.exhibit(
     fig,
-    f"Reviewing {BUDGETS[-1]:.0%} of firms by leverage finds "
+    f"Reviewing {BUDGETS[-1]:.0%} of firm-years by leverage finds "
     f"{budgets['capture_rate'].iloc[-1]:.0%} of the failures",
     "The capture curve of leverage alone, ranked within each year. Right: its first 12%.",
     OOF_SOURCE,
@@ -714,7 +710,7 @@ viz.exhibit(
 # **Next, how far to trust a score.**
 
 # %% [markdown]
-# # How Sure Are We
+# # How Sure Are We?
 #
 # A score computed on {{ch4.oof_positives}} positives would come out differently on another sample.
 # The **bootstrap** imitates another sample: it draws from the data with replacement, computes the score again, and repeats.
@@ -825,6 +821,8 @@ store.put("row_high", row_high)
 store.put("cluster_low", cluster_low)
 store.put("cluster_high", cluster_high)
 store.put("wider", (cluster_high - cluster_low) / (row_high - row_low) - 1)
+store.put("row_width", row_high - row_low)
+store.put("cluster_width", cluster_high - cluster_low)
 store.put("market_auc", roc_auc_score(y, other))
 store.put("diff", diff)
 store.put("diff_low", diff_low)
@@ -833,14 +831,15 @@ store.put("diff_high", diff_high)
 fig, (both, gap) = plt.subplots(1, 2, figsize=(viz.EXHIBIT_WIDTH_IN, 3.4), sharey=True)
 bins = np.linspace(draws[["Leverage", "Market value"]].min().min(), draws[["Leverage", "Market value"]].max().max(), 40)  # fmt: skip
 both.hist(draws["Leverage"], bins=bins, color=viz.INK, alpha=0.75, label="Leverage")
-both.hist(draws["Market value"], bins=bins, color=viz.CENSORED, alpha=0.75, label="Market value")
+both.hist(draws["Market value"], bins=bins, color=viz.ACCENT, alpha=0.75, label="Market value")
 both.set_title("Each score, drawn again")
 both.set_xlabel("ROC-AUC")
 both.set_ylabel(f"Draws, of {N_BOOT:,}")
 both.set_ylim(0, both.get_ylim()[1] * 1.25)
 both.legend(loc="upper left", ncols=2)
 gap.hist(draws["difference"], bins=40, color=viz.INK, alpha=0.75)
-gap.axvline(0, color=viz.FAILED, linewidth=1.2)
+gap.axvline(0, color=viz.INK, linewidth=1.2)
+gap.xaxis.set_major_locator(MaxNLocator(5))
 gap.axvspan(diff_low, diff_high, color=viz.RULE, alpha=0.5, linewidth=0, zorder=0)
 gap.set_title("Their difference on the same draws")
 gap.set_xlabel("ROC-AUC of market value less ROC-AUC of leverage")
@@ -868,7 +867,7 @@ viz.exhibit(
 # **Next, the yardstick meets its first model.**
 
 # %% [markdown]
-# # The Classics
+# # Altman's Z
 #
 # The best-known default score is the Z-score of [Altman (1968)](https://doi.org/10.1111/j.1540-6261.1968.tb00843.x).
 # It adds up five ratios, with weights fitted to {{ch4.altman_sample}} manufacturers.
@@ -927,7 +926,7 @@ fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 3.6))
 place = np.arange(len(ZONES))
 for group, color, marker, nudge in (
     ("Manufacturers", viz.INK, "o", -0.08),
-    ("All other divisions", viz.CENSORED, "s", 0.08),
+    ("All other divisions", viz.ACCENT, "s", 0.08),
 ):
     table = by_zone.loc[group].loc[ZONES]
     ax.errorbar(place + nudge, table["rate"], yerr=[table["rate"] - table["low"], table["high"] - table["rate"]],
@@ -937,7 +936,7 @@ ax.set_xticks(
     place,
     [
         f"Distress, Z below {ALTMAN_ZONES['distress_below']}",
-        "Grey",
+        "Grey zone",
         f"Safe, Z above {ALTMAN_ZONES['safe_above']}",
     ],
 )
@@ -1041,7 +1040,7 @@ store.put("z_lift_next", lift_next)
 
 fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 3.8))
 ax.plot(z_reviewed, z_captured, color=viz.INK, label="Altman Z")
-ax.plot([0, WIDER], [0, at_wider], color=viz.FAILED, linewidth=1.2, linestyle=(0, (4, 3)),
+ax.plot([0, WIDER], [0, at_wider], color=viz.SLATE, linewidth=1.2, linestyle=(0, (1, 2)),
         label=f"A straight line to the {WIDER:.0%} point")  # fmt: skip
 ax.plot(
     [0, 1], [0, 1], color=viz.MIST, linewidth=1.2, linestyle=(0, (4, 3)), label="A random ranking"
@@ -1054,18 +1053,18 @@ ax.set_xlim(0, 0.3)
 ax.set_ylim(0, z_captured[round(0.3 * len(z_y))] * 1.05)
 ax.xaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
 ax.yaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
-ax.set_xlabel("Firms reviewed, riskiest by Z first")
+ax.set_xlabel("Firm-years reviewed, riskiest by Z first")
 ax.set_ylabel("Failures found")
 ax.legend(loc="upper left")
 viz.exhibit(
     fig,
     f"The riskiest {TOP:.0%} by Z hold {at_top:.1%} of failures, a lift of only {lift_top:.1f}",
-    "The capture curve of Z over its first 30%. A sound ranking bends above the straight line.",
+    "The capture curve of Z over its first 30%. A sound ranking bends above the dotted line.",
     OOF_SOURCE,
 )
 
 # %% [markdown]
-# **Reading.** In Exhibit 4 the curve of Z starts below the straight line and crosses above it later.
+# **Reading.** In Exhibit 4 the curve of Z starts below the dotted line and crosses above it later.
 # The riskiest {{ch4.z_top:.0%}} by Z hold {{ch4.z_capture_top:.1%}} of the failures, a lift of {{ch4.z_lift_top:.1f}}.
 #
 # The next {{ch4.z_next:.0%}} hold {{ch4.z_capture_next:.0%}}, a lift of {{ch4.z_lift_next:.1f}}.
@@ -1077,7 +1076,7 @@ viz.exhibit(
 # **Next, whether new weights mend it.**
 
 # %% [markdown]
-# # Refitting the Classics
+# # Refitting Z
 #
 # Z is old, and two things in it could be out of date: the weights, or the choice of five ratios.
 # A refit tests the first.
@@ -1085,6 +1084,9 @@ viz.exhibit(
 # It keeps the five ratios and fits new weights to this data with a **logistic regression**, a model that adds up weighted inputs and turns the sum into a probability.
 #
 # **Predict 2.** Will the refitted weights rank better out of fold than the published ones?
+#
+# Five weights on five scales cannot be compared as they stand.
+# A weight's **pull** is the weight times the standard deviation of its ratio, taken as a share of the five.
 #
 # Q. How do the refitted weights compare with the published ones?
 
@@ -1150,22 +1152,22 @@ ax.barh(place - 0.18, share["Published"], height=0.34, color=viz.MODEL_COLORS["c
 ax.barh(place + 0.18, share["Refitted"], height=0.34, color=viz.MODEL_COLORS["logistic"],
         label="Refitted on this file")  # fmt: skip
 ax.axvline(0, color=viz.INK, linewidth=0.8)
-ax.set_yticks(place, FIVE)
+ax.set_yticks(place, [viz.label(name) for name in FIVE])
 ax.invert_yaxis()
 ax.xaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
 ax.grid(axis="y", visible=False)
-ax.set_xlabel("Share of the score's pull. Left of zero, a higher ratio lowers the risk")
-ax.legend(loc="lower left")
+ax.set_xlabel("Share of the score's pull")
+ax.legend(loc="lower left", bbox_to_anchor=(0, 1), ncols=2, borderaxespad=0.2)
 viz.exhibit(
     fig,
     f"The refit puts {-share.loc['mve_to_liabilities', 'Refitted']:.0%} of its pull on market value alone",
-    "Each weight times its ratio's standard deviation, as a share of the five. Development rows.",
+    "Pull: a weight times its ratio's standard deviation, as a share. Left of zero: higher is safer.",
     f"{SOURCE}; fiscal years to {DEV_END}; published weights from Altman (1968)",
 )
 
 # %% [markdown]
 # **Reading.** The refit scores {{ch4.refit_auc:.3f}} out of fold, below the {{ch4.z_auc:.3f}} of the published weights, and it is ahead in {{ch4.refit_folds_ahead}} of the {{ch4.n_folds}} folds.
-# New weights, fitted to the ratios as they stand, do not mend Z.
+# New weights, fitted to the ratios as they stand, do not mend Z, and a check at the end of the chapter shows why.
 #
 # Exhibit 5 shows how the two differ.
 # Altman's weights put {{ch4.published_retained:.0%}} of the pull on retained earnings and {{ch4.published_market:.0%}} on market value.
@@ -1429,7 +1431,7 @@ oof_scores.groupby("model")["target"].agg(rows="size", positives="sum")
 # %% [markdown]
 # # Findings
 #
-# 1. A ranking by leverage alone finds {{ch4.capture_10:.0%}} of the failures in the riskiest tenth of firms, a lift of {{ch4.lift_10:.1f}}, and almost nothing extra at the very top (Exhibit 1).
+# 1. A ranking by leverage alone finds {{ch4.capture_10:.0%}} of the failures in the riskiest tenth of firm-years, a lift of {{ch4.lift_10:.1f}}, and almost nothing extra at the very top (Exhibit 1).
 # 2. Drawing companies in place of rows widens the interval of a score by {{ch4.wider:.0%}}, and a paired difference of {{ch4.diff:.3f}} between two scores is clear of zero where their own intervals overlap (Exhibit 2).
 # 3. Altman's zones are in the right order, and sharper for manufacturers: {{ch4.maker_distress:.1%}} of them fail in the distress zone, against {{ch4.other_distress:.1%}} of the rest (Exhibit 3).
 # 4. Z ranks with a ROC-AUC of {{ch4.z_auc:.3f}} and goes wrong at its weak end: its riskiest {{ch4.z_top:.0%}} carry a lift of only {{ch4.z_lift_top:.1f}} (Exhibit 4).

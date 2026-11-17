@@ -94,7 +94,7 @@ def split_map() -> str:
 def embargo() -> str:
     """Why the last training year sits three years before the validation year."""
     wide = 150
-    names = [f"Y - {back}" for back in range(5, 0, -1)] + ["Y"]
+    names = [f"Y-{back}" for back in range(5, 0, -1)] + ["Y"]
 
     def x(index: int) -> int:
         return LEFT + index * wide
@@ -139,7 +139,6 @@ def embargo() -> str:
             220,
             len(names) * wide,
             f"A row of year {names[last_train + 1]} needs the filings of year Y, so no model for year Y may train on it.",
-            "s",
         )
     )
     return figure_plate(
@@ -178,8 +177,9 @@ def fold_map() -> str:
         parts.append(timebar(x(last_train + 1) + 2, y, HORIZON * wide - 4, tall, "embargo"))
         parts.append(timebar(x(fold.year) + 2, y, wide - 4, tall, "valid", str(fold.year)))
         found = int(dev.loc[fold.valid, "target"].sum())
-        crisis = ", a crisis fold" if fold.year in CRISIS_FOLDS else ""
-        parts.append(words(right, y + 5, 200, f"{found}{crisis}", "left"))
+        parts.append(words(right, y + 5, 60, str(found), "left"))
+        if fold.year in CRISIS_FOLDS:
+            parts.append(words(right + 44, y + 7, 150, "crisis fold", "s left"))
     height = 32 + len(folds) * (tall + 8)
     return figure_plate(
         stage(1000, height, *parts),

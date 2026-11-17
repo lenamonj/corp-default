@@ -24,14 +24,6 @@
       "honest_value": "{{ch4.trees_time:.3f}}",
       "why": "A random split trains on the years it is tested on, and on the same companies a year apart."
     },
-    "bounds": {
-      "name": "Fitting the clipping bounds on every row",
-      "naive_label": "Validation values clipped, bounds from every row",
-      "naive_value": "{{ch4.clipped_leak:.1%}}",
-      "honest_label": "Validation values clipped, bounds from training rows",
-      "honest_value": "{{ch4.clipped_honest:.1%}}",
-      "why": "Bounds that have seen the validation year fit it better than any bounds a lender could have had."
-    },
     "trapezoid": {
       "name": "Joining a precision-recall curve with straight lines",
       "naive_label": "Trapezoid area, {{ch4.grades}} grades",
@@ -42,12 +34,15 @@
     },
     "bootstrap": {
       "name": "Drawing rows as if they were independent",
-      "naive_label": "95% interval, rows drawn",
-      "naive_value": "{{ch4.row_low:.3f}} to {{ch4.row_high:.3f}}",
-      "honest_label": "95% interval, companies drawn",
-      "honest_value": "{{ch4.cluster_low:.3f}} to {{ch4.cluster_high:.3f}}",
+      "naive_label": "Width of the 95% interval, rows drawn",
+      "naive_value": "{{ch4.row_width:.3f}}",
+      "honest_label": "Width of the 95% interval, companies drawn",
+      "honest_value": "{{ch4.cluster_width:.3f}}",
       "why": "A company brings several rows that move together, so rows carry less news than their count."
     }
   },
-  "next": {"title": "The Trees", "line": "What do non-linearity and history buy?"}
+  "next": {
+    "title": "The Trees",
+    "line": "What do non-linearity and history buy?"
+  }
 }
