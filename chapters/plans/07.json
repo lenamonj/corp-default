@@ -26,5 +26,8 @@
       "why": "A pooled check averages good years against bad ones. A lender lives through them one at a time."
     }
   },
-  "next": {"title": "The Casebook", "line": "Back to the front page, and the results in one place."}
+  "next": {
+    "title": "The README",
+    "line": "The results in one place, and the limits to read them with."
+  }
 }

@@ -76,7 +76,7 @@ LEGACY_NON_FEATURES = [
 
 
 def legacy_fit_prepare(train_frame, cols):
-    """Fit winsorisation bounds and fill medians on the TRAINING split only.
+    """Fit winsorization bounds and fill medians on the TRAINING split only.
 
     Returns a `prepare` closure plus the fitted statistics so they can be asserted on.
     Written as a function so the horizon check refits cleanly on its own train split

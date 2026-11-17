@@ -76,8 +76,8 @@ def test_build_label_by_hand():
         + company("E", 2015, PANEL_END, "failed")  # fails at the panel's end
         + company("A", 2014, PANEL_END, "alive")
     )
-    labelled = build_label(frame, horizon=2)
-    got = {(row.company_name, row.year): row.target for row in labelled.itertuples()}
+    labeled = build_label(frame, horizon=2)
+    got = {(row.company_name, row.year): row.target for row in labeled.itertuples()}
     assert got == {
         ("F", 2010): 0, ("F", 2011): 0, ("F", 2012): 0, ("F", 2013): 1, ("F", 2014): 1,
         ("E", 2015): 0, ("E", 2016): 1,

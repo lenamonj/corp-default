@@ -108,9 +108,9 @@ def wilson_interval(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
         raise ValueError(f"wilson_interval needs n > 0, got n = {n}")
     p = k / n
     denominator = 1 + z**2 / n
-    centre = (p + z**2 / (2 * n)) / denominator
+    center = (p + z**2 / (2 * n)) / denominator
     half = z * np.sqrt(p * (1 - p) / n + z**2 / (4 * n**2)) / denominator
-    return max(0.0, centre - half), min(1.0, centre + half)
+    return max(0.0, center - half), min(1.0, center + half)
 
 
 def psi(expected, actual, bins: int = 10) -> float:
@@ -130,7 +130,7 @@ def psi(expected, actual, bins: int = 10) -> float:
 
 
 def reliability_table(y_true, prob, bins: int = 10) -> pd.DataFrame:
-    """Realised rate against mean predicted probability in quantile bins, with Wilson intervals."""
+    """Realized rate against mean predicted probability in quantile bins, with Wilson intervals."""
     frame = pd.DataFrame({"y": np.asarray(y_true), "prob": np.asarray(prob, dtype=float)})
     frame["bin"] = pd.qcut(frame["prob"], bins, duplicates="drop")
     table = frame.groupby("bin", observed=True).agg(

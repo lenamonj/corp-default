@@ -7,7 +7,7 @@
 #
 # > Nothing here is investment advice or a recommendation to buy or sell any security
 #
-# > The data is a public research dataset with anonymised company names
+# > The data is a public research dataset with anonymized company names
 
 # %% [markdown]
 # ## The Question
@@ -35,7 +35,7 @@
 # The data file, and Chapter 1 for what a panel, a firm-year, and the flag are.
 # This chapter reads nothing written by another one.
 #
-# It writes two tables that every later chapter reads: the labelled panel and the event table.
+# It writes two tables that every later chapter reads: the labeled panel and the event table.
 
 # %% [markdown]
 # ## Your Route
@@ -85,7 +85,7 @@
 # | `working_capital_to_assets` | Current assets less current liabilities, over total assets |
 # | `log_assets` | The logarithm of total assets, a measure of size |
 #
-# Q. What does the chapter need before it starts?
+# Q. What gets imported and loaded?
 
 # %%
 import matplotlib.pyplot as plt
@@ -116,17 +116,7 @@ SOURCE = "Lombardo et al. (2022), Kaggle copy"
 raw = load_raw()
 
 # %% [markdown]
-# **Reading.** The panel is in memory, and the house style is set for every chart.
-# `store.put` carries a number from a cell into the text, so no number in this chapter is typed by hand.
-#
-# Q. What does the table look like?
-
-# %%
-raw.head()
-
-# %% [markdown]
-# **Reading.** This is the table Chapter 1 took apart: one row for each company in each year.
-# The first three columns are this chapter's raw material.
+# **Reading.** The panel of Chapter 1 is in memory, and its first three columns are this chapter's raw material.
 #
 # Q. How large is the table, and what does each column hold?
 
@@ -276,8 +266,8 @@ auc.round(3)
 # **Reading.** On rows held out at random the trees score {{ch2.flag_auc_rows:.3f}}.
 # With whole companies held out, the same trees score {{ch2.flag_auc_companies:.3f}}.
 #
-# The gap is the model recognising companies it has already met.
-# The logistic regression is too stiff to recognise a company, so its two scores sit close together, at {{ch2.logit_auc_rows:.3f}} and {{ch2.logit_auc_companies:.3f}}.
+# The gap is the model recognizing companies it has already met.
+# The logistic regression is too stiff to recognize a company, so its two scores sit close together, at {{ch2.logit_auc_rows:.3f}} and {{ch2.logit_auc_companies:.3f}}.
 
 # %% [markdown]
 # <!-- pitfall: split -->
@@ -383,21 +373,21 @@ def build_label(frame: pd.DataFrame, horizon: int) -> pd.DataFrame:
 # Q. How many rows does the label keep, and how many are positive?
 
 # %%
-labelled = build_label(raw, HORIZON)
+labeled = build_label(raw, HORIZON)
 past_window = ~(flagged & is_last) & (raw["year"] + HORIZON > PANEL_END)
 
-store.put("labelled_rows", len(labelled))
-store.put("positives", int(labelled["target"].sum()))
-store.put("base_rate", labelled["target"].mean())
-store.put("last_labelled_year", int(labelled["year"].max()))
+store.put("labelled_rows", len(labeled))
+store.put("positives", int(labeled["target"].sum()))
+store.put("base_rate", labeled["target"].mean())
+store.put("last_labelled_year", int(labeled["year"].max()))
 
 pd.Series(
     {
         "rows in the file": len(raw),
         "last rows of failed companies, dropped": int((flagged & is_last).sum()),
         f"rows after {PANEL_END - HORIZON}, dropped": int(past_window.sum()),
-        "rows kept": len(labelled),
-        "positive rows": int(labelled["target"].sum()),
+        "rows kept": len(labeled),
+        "positive rows": int(labeled["target"].sum()),
     },
     name="rows",
 ).to_frame()
@@ -414,16 +404,16 @@ pd.Series(
 # The checks below run every time the notebook runs, and the chapter stops if one fails.
 
 # %%
-positive = labelled["target"] == 1
+positive = labeled["target"] == 1
 
 # The count first: the last two checks look only at positive rows, and would pass on none.
-assert labelled["target"].sum() == 1123, "the count of positive rows has moved"
-assert not (labelled["failed"] & (labelled["years_to_final"] == 0)).any(), (
+assert labeled["target"].sum() == 1123, "the count of positive rows has moved"
+assert not (labeled["failed"] & (labeled["years_to_final"] == 0)).any(), (
     "the last row of a failed company was kept"
 )
-assert labelled["year"].max() == PANEL_END - HORIZON, "a window runs past the end of the file"
-assert labelled.loc[positive, "failed"].all(), "a positive row belongs to a company not flagged"
-assert labelled.loc[positive, "years_to_final"].between(1, HORIZON).all(), (
+assert labeled["year"].max() == PANEL_END - HORIZON, "a window runs past the end of the file"
+assert labeled.loc[positive, "failed"].all(), "a positive row belongs to a company not flagged"
+assert labeled.loc[positive, "years_to_final"].between(1, HORIZON).all(), (
     "a positive row lies outside the window"
 )
 print("label checks passed")
@@ -441,7 +431,7 @@ print("label checks passed")
 # The file cannot confirm that, but it can show whether those last filings look like companies in trouble.
 #
 # The yardstick is one a credit analyst knows: the Z-score of [Altman (1968)](https://doi.org/10.1111/j.1540-6261.1968.tb00843.x).
-# It combines five ratios and sorts a company into a distress zone, a grey zone, or a safe zone.
+# It combines five ratios and sorts a company into a distress zone, a gray zone, or a safe zone.
 #
 # It was built for manufacturers, and it serves here as an outside opinion only.
 # Chapter 4 takes it apart.
@@ -463,7 +453,7 @@ zones = pd.DataFrame(
         "failed, last filing": audit["zone"].value_counts(normalize=True),
         "every other firm-year": others["zone"].value_counts(normalize=True),
     }
-).loc[["distress", "grey", "safe"]]
+).loc[["distress", "gray", "safe"]]
 
 store.put("audit_companies", len(audit))
 store.put("audit_distress", zones.loc["distress", "failed, last filing"])
@@ -536,13 +526,13 @@ ax.legend(
 viz.exhibit(
     fig,
     f"At their last filing, {loss_share:.0%} of failed companies report a loss",
-    "Darker grey holds more firm-years. An open triangle is a failed company beyond the frame, "
+    "Darker gray holds more firm-years. An open triangle is a failed company beyond the frame, "
     "drawn at its edge.",
     f"{SOURCE}; fiscal years to {DEV_END}",
 )
 
 # %% [markdown]
-# **Reading.** The red points in Exhibit 2 sit low and to the right of the grey cloud: losses, and liabilities close to or above assets.
+# **Reading.** The red points in Exhibit 2 sit low and to the right of the gray cloud: losses, and liabilities close to or above assets.
 # A loss shows in {{ch2.audit_loss:.0%}} of the last filings, against {{ch2.others_loss:.0%}} of the other firm-years.
 #
 # Liabilities are above assets in {{ch2.audit_negative_equity:.0%}} of them.
@@ -584,7 +574,7 @@ viz.exhibit(
 # Q. How does the two-year failure rate move from year to year?
 
 # %%
-by_year = labelled.groupby("year")["target"].agg(positives="sum", rows="size")
+by_year = labeled.groupby("year")["target"].agg(positives="sum", rows="size")
 by_year["rate"] = by_year["positives"] / by_year["rows"]
 bounds = [wilson_interval(int(k), int(n)) for k, n in zip(by_year["positives"], by_year["rows"])]
 by_year = by_year.join(pd.DataFrame(bounds, index=by_year.index, columns=["low", "high"]))
@@ -595,7 +585,7 @@ RECESSIONS = {"2001 recession": (2000,), "2007 to 2009 recession": CRISIS_FINAL_
 
 
 def reaching(final_years: tuple[int, ...]) -> list[int]:
-    """Labelled years whose window, t + 1 to t + HORIZON, holds one of `final_years`."""
+    """Labeled years whose window, t + 1 to t + HORIZON, holds one of `final_years`."""
     return [t for t in by_year.index if set(range(t + 1, t + HORIZON + 1)) & set(final_years)]
 
 
@@ -1043,7 +1033,7 @@ viz.exhibit(
 
 # %% [markdown]
 # **Reading.** In Exhibit 7 the red band is the share of companies that have failed, and after {{ch2.at_years}} years it stands at {{ch2.cif_fail_at:.1%}}.
-# The grey band is far larger: {{ch2.cif_left_at:.0%}} have left another way by then.
+# The gray band is far larger: {{ch2.cif_left_at:.0%}} have left another way by then.
 #
 # The dashed line is one minus Kaplan-Meier, and it reads {{ch2.km_fail_at:.1%}} at the same point.
 # It runs above the red band because it hands every company that left a share of the failures that came later.
@@ -1080,7 +1070,7 @@ for horizon in (1, 2, 3):
     hits = frame.loc[frame["target"] == 1]
     by_horizon[horizon] = {
         "rows": len(frame),
-        "last year labelled": int(frame["year"].max()),
+        "last year labeled": int(frame["year"].max()),
         "positives": len(hits),
         "base rate": frame["target"].mean(),
         "unconfirmed": int((hits["last_year"] == PANEL_END).sum()),
@@ -1100,7 +1090,7 @@ store.put("unconfirmed_3", horizons.loc[3, "unconfirmed share"])
 store.put("rows_lost_3", int(horizons.loc[2, "rows"] - horizons.loc[3, "rows"]))
 
 panels = [
-    ("base rate", "Base rate: positive share of labelled rows", 2, 1),
+    ("base rate", "Base rate: positive share of labeled rows", 2, 1),
     ("unconfirmed share", "Unconfirmed share of positives", 1, 0),
 ]
 fig, axes = plt.subplots(1, 2, figsize=(viz.EXHIBIT_WIDTH_IN, 3.2))
@@ -1141,13 +1131,13 @@ viz.exhibit(
 # # The Label We Carry Forward
 #
 # Every later chapter starts from two tables written here.
-# The **labelled panel** is the file's rows with the label attached, and the event table is the one built above.
+# The **labeled panel** is the file's rows with the label attached, and the event table is the one built above.
 #
-# Q. What does the labelled panel look like for one failed company?
+# Q. What does the labeled panel look like for one failed company?
 
 # %%
 keys = ["company_name", "year"]
-labelled_panel = labelled
+labelled_panel = labeled
 for horizon in (1, 3):
     other = build_label(raw, horizon)[[*keys, "target"]]
     other = other.rename(columns={"target": f"target_{horizon}"})
@@ -1170,7 +1160,7 @@ near_end.loc[whole, columns].head(4)
 #
 # `target_3` is blank on {{ch2.no_target_3:,}} rows, those of {{ch2.last_labelled_year}}, whose three-year window runs past the end of the file.
 #
-# The labelled panel has {{ch2.labelled_rows:,}} rows and the event table has {{ch2.companies:,}}, one for each company.
+# The labeled panel has {{ch2.labelled_rows:,}} rows and the event table has {{ch2.companies:,}}, one for each company.
 #
 # **The next chapter turns the accounts into ratios and asks where failure shows in them.**
 

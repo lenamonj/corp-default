@@ -7,7 +7,7 @@
 #
 # > Nothing here is investment advice or a recommendation to buy or sell any security
 #
-# > The data is a public research dataset with anonymised company names
+# > The data is a public research dataset with anonymized company names
 
 # %% [markdown]
 # ## The Question
@@ -15,7 +15,7 @@
 # Chapter 4 ended on a logistic regression over every ratio.
 # It can only add the ratios up, each with one weight.
 #
-# Chapter 3 found curves that bend, a risk map whose corner matters, and failed firms that decay for years.
+# Chapter 3 found curves that bend, a risk map whose corner matters, and failed companies that decay for years.
 # What do non-linearity and history buy?
 
 # %% [markdown]
@@ -59,7 +59,7 @@
 # | --- | --- | --- |
 # | **Ratios** | The {{ch5.n_ratios}} ratios, in seven families | Chapter 3 |
 # | **History** | {{ch5.n_history}} columns: changes over one and two years, growth, past losses, years observed | Chapter 3 |
-# | **Raw dollars** | The {{ch5.n_raw}} dollar items of the file | Chapter 1 |
+# | **Raw items** | The {{ch5.n_raw}} accounting items of the file | Chapter 1 |
 # | **Industry** | The SIC `division` and `major_group` of each company | Chapter 1 |
 #
 # Five words describe a boosted tree model.
@@ -72,7 +72,7 @@
 # | **Learning rate** | The fraction of each new tree that is added to the sum |
 # | **Configuration** | One choice of depth, learning rate, and the other settings |
 #
-# Q. What does the chapter need before it starts?
+# Q. What gets imported and loaded?
 
 # %%
 import os
@@ -107,7 +107,6 @@ earlier = store.load_frame("oof_scores")
 
 # %% [markdown]
 # **Reading.** The table of Chapter 3 and the scores of Chapter 4 are in memory, and the house style is set for every chart.
-# `store.put` carries a number from a cell into the text, so no number in this chapter is typed by hand.
 #
 # Q. What do the scores of Chapter 4 look like?
 
@@ -210,19 +209,25 @@ grid = prepare_two(
         {"liabilities_to_assets": np.tile(across, len(up)), "roa": np.repeat(up, len(across))}
     )
 )
-ramp = LinearSegmentedColormap.from_list("ramp", ["#F6EFDC", TREES, "#4F3907"])
+ramp = LinearSegmentedColormap.from_list("ramp", viz.RISK)
 inputs_last = prepare_two(valid_last)
+# iteration_range=(0, k) asks the fitted model for the sum of its first k trees only.
+surfaces = {k: small.predict_proba(grid, iteration_range=(0, k))[:, 1] for k in SHOWN}
+# One scale serves the three panels, so a shade means the same probability in each.
+shared = LogNorm(
+    min(surface.min() for surface in surfaces.values()),
+    max(surface.max() for surface in surfaces.values()),
+)
 
 fig, axes = plt.subplots(1, len(SHOWN), figsize=(viz.EXHIBIT_WIDTH_IN, 3.3), sharey=True)
 levels, small_auc = {}, {}
 for ax, rounds in zip(axes, SHOWN):
-    # iteration_range=(0, k) asks the fitted model for the sum of its first k trees only.
-    surface = small.predict_proba(grid, iteration_range=(0, rounds))[:, 1]
+    surface = surfaces[rounds]
     held_out = small.predict_proba(inputs_last, iteration_range=(0, rounds))[:, 1]
     levels[rounds] = len(np.unique(surface))
     small_auc[rounds] = roc_auc_score(valid_last["target"], held_out)
-    ax.pcolormesh(across, up, surface.reshape(len(up), len(across)), cmap=ramp,
-                  norm=LogNorm(surface.min(), surface.max()), shading="nearest", rasterized=True)  # fmt: skip
+    mesh = ax.pcolormesh(across, up, surface.reshape(len(up), len(across)), cmap=ramp, norm=shared,
+                         shading="nearest", rasterized=True)  # fmt: skip
     ax.axhline(0, color=viz.INK, linewidth=0.6)
     ax.set_title(
         f"{rounds} round{'s' if rounds > 1 else ''}: {surface.min():.2%} to {surface.max():.2%}"
@@ -230,6 +235,9 @@ for ax, rounds in zip(axes, SHOWN):
     ax.set_xlabel("Liabilities over assets")
     ax.grid(visible=False)
 axes[0].set_ylabel("Net income over assets")
+scale = fig.colorbar(mesh, ax=axes, shrink=0.85, pad=0.02, label="Predicted failure probability")
+scale.set_ticks([0.001, 0.01, 0.1], labels=["0.1%", "1%", "10%"])
+scale.ax.minorticks_off()
 
 # The reading says more rounds are not always better. Checked here.
 assert small_auc[SHOWN[1]] > small_auc[SHOWN[2]]
@@ -241,16 +249,15 @@ viz.exhibit(
     fig,
     f"One tree gives {levels[SHOWN[0]]} scores on the map, and {SHOWN[-1]} trees give "
     f"{levels[SHOWN[-1]]:,}",
-    "Predicted two-year failure probability. Each panel's colour runs from its own lowest value, "
-    "pale, to its highest, dark.",
+    "Predicted two-year failure probability. One color scale serves the three panels.",
     f"{SOURCE}; fitted on fiscal years to {train_last['year'].max()}",
 )
 
 # %% [markdown]
 # **Reading.** In Exhibit 1 one tree cuts the map into rectangles, one for each of the {{ch5.leaves_on_map}} leaves that reach it.
-# Ten trees make a staircase that darkens towards the corner Chapter 3 found, where high leverage meets losses.
+# Ten trees make a staircase that darkens toward the corner Chapter 3 found, where high leverage meets losses.
 #
-# Two hundred trees add fine stripes, and a stripe a few firms wide is as likely noise as risk.
+# Two hundred trees add fine stripes, and a stripe a few companies wide is as likely noise as risk.
 # So more rounds are not always better.
 #
 # On the validation year of the last fold the three models rank at {{ch5.small_auc_1:.3f}}, {{ch5.small_auc_10:.3f}}, and {{ch5.small_auc_200:.3f}}.
@@ -390,7 +397,7 @@ compare.round(4)
 # **Next, how far to trust one validation score.**
 
 # %% [markdown]
-# # How Noisy Is a Validation Score
+# # How Noisy Is a Validation Score?
 #
 # Tuning means fitting many configurations and keeping the one that scores best.
 # That only works if the difference between two scores is larger than the noise in each.
@@ -482,8 +489,7 @@ ax.grid(axis="y", visible=False)
 ax.set_xlabel(f"Average precision on the validation year {last.year}")
 viz.exhibit(
     fig,
-    f"A new seed moves the score by {by_seed.std():.3f}; the two best configurations are "
-    f"{top_gap:.3f} apart",
+    f"A seed moves the score by {by_seed.std():.3f}; the two best configurations are {top_gap:.3f} apart",
     f"Each dot is one fit of {START_ROUNDS} rounds on the last fold. The standard deviation across "
     f"configurations is {by_config.std():.3f}.",
     f"{SOURCE}; fitted on fiscal years to {train_last['year'].max()}",
@@ -597,7 +603,7 @@ leaders.head(8).round(4)
 # **Reading.** The rule chooses trees {{ch5.frozen_depth}} questions deep, a learning rate of {{ch5.frozen_rate}}, and {{ch5.rounds}} rounds, for a mean average precision of {{ch5.chosen_mean_ap:.4f}}.
 # The table lists each configuration at its own best round count, and the top {{ch5.leaders_shown}} lie within {{ch5.leaders_within:.4f}} of each other.
 #
-# So the search finds a neighbourhood and not a point: shallow trees that learn slowly.
+# So the search finds a neighborhood and not a point: shallow trees that learn slowly.
 # The choice is the shallowest tree and the slowest learning rate the space offers, so the best model may lie beyond its edge, which Your Turn takes up.
 #
 # Q. How does average precision move as rounds are added?
@@ -626,9 +632,8 @@ ax.set_xlabel("Rounds")
 ax.set_ylabel("Mean average precision, seven folds")
 viz.exhibit(
     fig,
-    f"The chosen configuration peaks at {ROUNDS} rounds, with a mean average precision of "
-    f"{mean_ap.max():.3f}",
-    f"Grey: the other {N_CONFIGS - 1} configurations. Band: one standard error of the seven-fold mean.",
+    f"The chosen configuration peaks at {ROUNDS} rounds, at an average precision of {mean_ap.max():.3f}",
+    f"Gray: the other {N_CONFIGS - 1} configurations. Band: one standard error of the seven-fold mean.",
     OOF_SOURCE,
 )
 
@@ -775,7 +780,7 @@ tree_step.to_frame().T.set_index("model").drop(columns=["against", "usable"]).as
 # %% [markdown]
 # # Adding History
 #
-# Chapter 3 showed failed firms decaying for years before their last filing, and built {{ch5.n_history}} columns to carry that: changes, growth, and past losses.
+# Chapter 3 showed failed companies decaying for years before their last filing, and built {{ch5.n_history}} columns to carry that: changes, growth, and past losses.
 # Rung five gives the frozen configuration those columns beside the ratios.
 #
 # **Predict 3.** The snapshot model reads one year. With {{ch5.n_history}} columns of history beside it, by how much does the walk-forward ROC-AUC rise?
@@ -887,16 +892,16 @@ top.hlines(median_gap, median_gap.index - 0.3, median_gap.index + 0.3, color=viz
 top.axhline(0, color=viz.INK, linewidth=0.8)
 top.annotate("crisis folds", (CRISIS_FOLDS[0] - 0.45, 0.96), xycoords=("data", "axes fraction"),
              va="top", size=8.5, color=viz.SLATE)  # fmt: skip
-top.set_ylabel("ROC-AUC with history,\nless without")
+top.set_title("ROC-AUC with history, less ROC-AUC without")
 bar = 0.36
 bottom.bar(
     blank.index - bar / 2, blank["Training rows"], bar, color=viz.SLATE, label="Training rows"
 )
 bottom.bar(
-    blank.index + bar / 2, blank["Validation year"], bar, color=viz.MIST, label="Validation year"
+    blank.index + bar / 2, blank["Validation year"], bar, color=viz.ACCENT, label="Validation year"
 )
 bottom.yaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
-bottom.set_ylabel("Rows with no\ntwo-year history")
+bottom.set_title("Share of rows with no two-year history")
 bottom.set_xlabel("Validation year of the fold")
 bottom.set_xticks(blank.index)
 bottom.legend(loc="upper right", ncols=2)
@@ -905,14 +910,14 @@ for ax in (top, bottom):
 viz.exhibit(
     fig,
     f"History costs {-early.mean():.3f} of ROC-AUC in the folds to {CRISIS_FOLDS[-1]} and adds "
-    f"{later.mean():.3f} in the later ones",
-    f"Top: each dot is one of {N_CONFIGS} configurations at {ROUNDS} rounds, and the bar is their median.",
+    f"{later.mean():.3f} after",
+    f"Top: each dot is one of {N_CONFIGS} configurations at {ROUNDS} rounds; the bar is their median.",
     OOF_SOURCE,
 )
 
 # %% [markdown]
 # **Reading.** Exhibit 4 splits the answer in two.
-# In the {{ch5.n_early}} earliest folds only {{ch5.early_ahead:.0%}} of the comparisons favour history, and in the {{ch5.n_later}} later folds {{ch5.later_ahead:.0%}} do.
+# In the {{ch5.n_early}} earliest folds only {{ch5.early_ahead:.0%}} of the comparisons favor history, and in the {{ch5.n_later}} later folds {{ch5.later_ahead:.0%}} do.
 #
 # The lower panel shows what sets the early folds apart.
 # The panel starts in 1999, so no row can show a two-year change before {{ch5.history_year_from}}.
@@ -931,10 +936,10 @@ viz.exhibit(
 # **Next, two blocks of inputs that have waited since Chapter 1.**
 
 # %% [markdown]
-# # Do Raw Dollars and Industry Earn Their Place
+# # Do Raw Items and Industry Earn Their Place?
 #
-# Two blocks of columns have waited since Chapter 1: the {{ch5.n_raw}} dollar items and the industry codes.
-# Chapter 3 set the dollars aside, because a ratio compares firms of different size and a dollar amount does not.
+# Two blocks of columns have waited since Chapter 1: the {{ch5.n_raw}} accounting items and the industry codes.
+# Chapter 3 set the raw items aside, because a ratio compares companies of different size and a raw amount does not.
 #
 # A tree needs no common scale, so both blocks can be offered as they are.
 # Each is added to the full set of Chapter 3, ratios and history, under the frozen configuration.
@@ -958,14 +963,14 @@ def industry_scores(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
 
 blocks = {
     "Plus history": ladder["Plus history"],
-    "Raw dollars": walk_forward_oof(tree_scores(FROZEN, [*ALL, *RAW_ITEMS], ROUNDS), dev, folds),
+    "Raw items": walk_forward_oof(tree_scores(FROZEN, [*ALL, *RAW_ITEMS], ROUNDS), dev, folds),
     "Industry": walk_forward_oof(industry_scores, dev_industry, folds),
 }
 block_steps = (
     pd.DataFrame(
         [
             history_step,
-            paired_table(blocks, ["Plus history", "Raw dollars"]).iloc[0],
+            paired_table(blocks, ["Plus history", "Raw items"]).iloc[0],
             paired_table(blocks, ["Plus history", "Industry"]).iloc[0],
         ]
     )
@@ -973,14 +978,14 @@ block_steps = (
     .drop(columns=["against", "usable"])
     .astype(float)
 )
-raw_step, industry_step = block_steps.loc["Raw dollars"], block_steps.loc["Industry"]
-# The reading says raw dollars add a gain in ROC-AUC that is clear of zero, and that neither block
+raw_step, industry_step = block_steps.loc["Raw items"], block_steps.loc["Industry"]
+# The reading says raw items add a gain in ROC-AUC that is clear of zero, and that neither block
 # brings the model back to the snapshot's level. Checked here.
 assert raw_step["roc_auc_diff_lo"] > 0
 assert all(
     roc_auc_score(blocks[name]["target"], blocks[name]["pct"])
     < roc_auc_score(ladder["All ratios, trees"]["target"], ladder["All ratios, trees"]["pct"])
-    for name in ("Raw dollars", "Industry")
+    for name in ("Raw items", "Industry")
 )
 
 store.put("raw_step", raw_step["roc_auc_diff"])
@@ -993,7 +998,7 @@ store.put("raw_share_of_tree_step", raw_step["roc_auc_diff"] / tree_step["roc_au
 
 LABELS = [
     "History,\nbeside the ratios",
-    "Raw dollars,\nbeside ratios and history",
+    "Raw items,\nbeside ratios and history",
     "Industry,\nbeside ratios and history",
 ]
 fig, axes = plt.subplots(1, 2, figsize=(viz.EXHIBIT_WIDTH_IN, 2.9), sharey=True)
@@ -1002,8 +1007,8 @@ for ax, key, name in zip(axes, ("roc_auc_diff", "ap_diff"), ("ROC-AUC", "average
     ax.hlines(place, block_steps[f"{key}_lo"], block_steps[f"{key}_hi"], color=TREES, linewidth=1.6)
     ax.scatter(block_steps[key], place, s=46, color=TREES, zorder=3)
     for y_at, value in zip(place, block_steps[key]):
-        ax.annotate(f"{value:+.3f}", (value, y_at), xytext=(0, 8), textcoords="offset points",
-                    ha="center", size=9)  # fmt: skip
+        ax.annotate(f"{value:+.3f}", (value, y_at), xytext=(7, 7), textcoords="offset points",
+                    ha="left", size=9)  # fmt: skip
     ax.axvline(0, color=viz.INK, linewidth=0.8)
     ax.set_title(f"Difference in {name}")
     ax.grid(axis="y", visible=False)
@@ -1011,14 +1016,13 @@ axes[0].set_yticks(place, LABELS)
 axes[0].set_ylim(-0.6, len(block_steps) - 0.4)
 viz.exhibit(
     fig,
-    f"History costs {-history_step['roc_auc_diff']:.3f} of ROC-AUC; raw dollars give back "
-    f"{raw_step['roc_auc_diff']:.3f} and industry {industry_step['roc_auc_diff']:.3f}",
-    "Paired differences on the walk-forward, each block against the model without it, with 95% intervals.",
+    f"Raw items add {raw_step['roc_auc_diff']:.3f} of ROC-AUC, and industry adds nothing clear of zero",
+    "Paired differences on the walk-forward, each block against the model without it. 95% intervals.",
     OOF_SOURCE,
 )
 
 # %% [markdown]
-# **Reading.** In Exhibit 5 raw dollars add {{ch5.raw_step:.3f}} of ROC-AUC, with an interval from {{ch5.raw_step_low:.3f}} to {{ch5.raw_step_high:.3f}} that is clear of zero.
+# **Reading.** In Exhibit 5 raw items add {{ch5.raw_step:.3f}} of ROC-AUC, with an interval from {{ch5.raw_step_low:.3f}} to {{ch5.raw_step_high:.3f}} that is clear of zero.
 # The gain is real and small, {{ch5.raw_share_of_tree_step:.0%}} of what trees added to the ratios.
 #
 # Industry adds {{ch5.industry_step:.4f}}, with an interval from {{ch5.industry_step_low:.4f}} to {{ch5.industry_step_high:.4f}}.
@@ -1152,7 +1156,7 @@ for ax, name in zip(axes, shown):
     ax.plot(QUANTILES * 100, loose, color=TREES, linewidth=2.2, label="Free")
     ax.plot(QUANTILES * 100, held, color=viz.INK, linewidth=1.2, linestyle=(0, (4, 2)),
             label="Constrained")  # fmt: skip
-    ax.set_title(name, size=9)
+    ax.set_title(viz.label(name, short=True), size=9.5)
     ax.set_xlabel("Percentile")
     ax.xaxis.set_major_locator(MultipleLocator(25))
 axes[0].set_ylabel("Mean predicted probability")
@@ -1163,8 +1167,8 @@ store.put("pd_widest", widest * 100)
 
 viz.exhibit(
     fig,
-    f"A constraint moves the model's curve by at most {widest * 100:.2f} percentage points",
-    "The mean prediction when one ratio is moved across its own percentiles and every other input is left as it is.",
+    f"Monotone constraints move the model's curves by {widest * 100:.2f} points at most",
+    "Mean prediction as one ratio moves across its percentiles, every other input left as it is.",
     f"{SOURCE}; both models fitted on the development years",
 )
 
@@ -1173,7 +1177,7 @@ viz.exhibit(
 # The free model was close to monotone already, and where its curve wanders the constraint flattens it, by {{ch5.pd_widest:.2f}} percentage points at most.
 #
 # So a constraint here buys a guarantee and not accuracy.
-# A lender can be told that no firm's score improves because its market value fell.
+# A lender can be told that no company's score improves because its market value fell.
 #
 # **Check.** Each fold derives its own list of constraints. What would go wrong if one list, from every development row, served all seven folds?
 #
@@ -1190,7 +1194,7 @@ viz.exhibit(
 # %% [markdown]
 # # The Ladder So Far
 #
-# The chapter has walked {{ch5.n_candidates}} tree models forward: the snapshot, the snapshot with history, and four variations on that.
+# The chapter has walked {{ch5.n_candidates}} tree models forward: the snapshot, the snapshot with history, and four variants of the second.
 # One of them goes forward, to be blended with a network in Chapter 6 and scored on the holdout in Chapter 7.
 #
 # The rule is the one that chose the configuration: the highest mean average precision over the seven folds, each fold counting the same.
@@ -1202,7 +1206,7 @@ candidates = {
     "All ratios, trees": ladder["All ratios, trees"],
     "Plus history": ladder["Plus history"],
     "History, own search": own_oof,
-    "Raw dollars": blocks["Raw dollars"],
+    "Raw items": blocks["Raw items"],
     "Industry": blocks["Industry"],
     "Monotone": blocks["Monotone"],
 }
@@ -1251,7 +1255,7 @@ board[["roc_auc", "roc_auc_lo", "roc_auc_hi", "ap", "capture_5", "lift_5", "accu
 
 # %% [markdown]
 # **Reading.** The snapshot model has a ROC-AUC of {{ch5.snapshot_auc:.3f}}, with an interval from {{ch5.snapshot_auc_low:.3f}} to {{ch5.snapshot_auc_high:.3f}}.
-# At the middle budget it finds {{ch5.snapshot_capture_5:.1%}} of the failures, where the logistic regression found {{ch5.logistic_capture_5:.1%}}.
+# At the middle of Chapter 4's three budgets it finds {{ch5.snapshot_capture_5:.1%}} of the failures, where the logistic regression found {{ch5.logistic_capture_5:.1%}}.
 #
 # Rung five scores {{ch5.history_auc:.3f}}, and at the middle budget it finds {{ch5.history_capture_5:.1%}}.
 # History costs the ranking as a whole, yet at the middle budget, the part a desk reviews, it finds no fewer failures.
@@ -1264,17 +1268,23 @@ steps = paired_table(ladder, list(ladder)).set_index("model")
 COLORS = [viz.MODEL_COLORS[kind] for kind in ("classic", "logistic", "logistic", "trees", "trees")]
 fig, (level, step) = plt.subplots(1, 2, figsize=(viz.EXHIBIT_WIDTH_IN, 3.9), sharey=True)
 place = np.arange(len(ladder))
+EARLIER = 3  # the rungs Chapter 4 built, drawn fainter than the two this chapter adds
 for y_at, (name, row), color in zip(place, board.iterrows(), COLORS):
-    level.plot([row["roc_auc_lo"], row["roc_auc_hi"]], [y_at, y_at], color=color, linewidth=1.6)
-    level.scatter(row["roc_auc"], y_at, s=46, color=color, zorder=3)
+    fade = 0.4 if y_at < EARLIER else 1.0
+    level.plot([row["roc_auc_lo"], row["roc_auc_hi"]], [y_at, y_at], color=color, linewidth=1.6,
+               alpha=fade)  # fmt: skip
+    level.scatter(row["roc_auc"], y_at, s=46, color=color, zorder=3, alpha=fade)
     level.annotate(f"{row['roc_auc']:.3f}", (row["roc_auc"], y_at), xytext=(0, 8),
-                   textcoords="offset points", ha="center", size=9)  # fmt: skip
+                   textcoords="offset points", ha="center", size=9,
+                   color=viz.MIST if y_at < EARLIER else viz.INK)  # fmt: skip
 for y_at, (name, row), color in zip(place[1:], steps.iterrows(), COLORS[1:]):
+    fade = 0.4 if y_at < EARLIER else 1.0
     step.plot([row["roc_auc_diff_lo"], row["roc_auc_diff_hi"]], [y_at, y_at], color=color,
-              linewidth=1.6)  # fmt: skip
-    step.scatter(row["roc_auc_diff"], y_at, s=46, color=color, zorder=3)
+              linewidth=1.6, alpha=fade)  # fmt: skip
+    step.scatter(row["roc_auc_diff"], y_at, s=46, color=color, zorder=3, alpha=fade)
     step.annotate(f"{row['roc_auc_diff']:+.3f}", (row["roc_auc_diff"], y_at), xytext=(0, 8),
-                  textcoords="offset points", ha="center", size=9)  # fmt: skip
+                  textcoords="offset points", ha="center", size=9,
+                  color=viz.MIST if y_at < EARLIER else viz.INK)  # fmt: skip
 step.axvline(0, color=viz.INK, linewidth=0.8)
 level.set_yticks(place, [f"{k + 1}  {name}" for k, name in enumerate(ladder)])
 level.set_ylim(-0.6, len(ladder) - 0.4)
@@ -1287,7 +1297,7 @@ viz.exhibit(
     fig,
     f"Trees add {tree_step['roc_auc_diff']:.3f} of ROC-AUC to the ratios, and history takes "
     f"{-history_step['roc_auc_diff']:.3f} back",
-    "Walk-forward scores with 95% cluster-bootstrap intervals. Right: paired differences.",
+    "95% cluster-bootstrap intervals. Right: paired differences. Faint: the rungs of Chapter 4.",
     OOF_SOURCE,
     save_as="ch5",
 )
@@ -1350,11 +1360,11 @@ oof_scores.groupby("model", sort=False)["target"].agg(rows="size", positives="su
 #
 # 1. One tree three questions deep gives a handful of scores, and boosting adds small trees until the map of risk is fine, and then until it is noisy (Exhibit 1).
 # 2. Changing only the seed moves average precision on one fold by {{ch5.seed_sd:.3f}}, more than the {{ch5.top_gap:.4f}} between the two best configurations on that fold (Exhibit 2).
-# 3. Seven folds choose trees {{ch5.frozen_depth}} questions deep and {{ch5.rounds}} rounds; a single window's winner scores {{ch5.winner_own:.3f}} on its window and {{ch5.winner_elsewhere:.3f}} elsewhere (Exhibit 3).
+# 3. Seven folds choose trees {{ch5.frozen_depth}} questions deep and {{ch5.rounds}} rounds; a single window's winner scores {{ch5.winner_own:.3f}} on its window and {{ch5.winner_elsewhere:.3f}} elsewhere (Exhibit 3 and the plate after it).
 # 4. Trees add {{ch5.tree_step:.3f}} of ROC-AUC to the same {{ch5.n_ratios}} ratios, with an interval above zero (Exhibit 7).
 # 5. History takes it back: {{ch5.history_step:.3f}}, with an interval below zero, and a search of its own does not rescue it (Exhibit 7).
 # 6. History costs {{ch5.early_cost:.3f}} of ROC-AUC in the folds that train on the panel's first years and adds {{ch5.later_gap:.3f}} in the later ones (Exhibit 4).
-# 7. Raw dollars add {{ch5.raw_step:.3f}} and industry {{ch5.industry_step:.3f}}, and monotone constraints move the model's curves by at most {{ch5.pd_widest:.2f}} percentage points (Exhibit 5, Exhibit 6).
+# 7. Raw items add {{ch5.raw_step:.3f}} and industry {{ch5.industry_step:.3f}}, and monotone constraints move the model's curves by at most {{ch5.pd_widest:.2f}} percentage points (Exhibit 5, Exhibit 6).
 
 # %% [markdown]
 # # Your Turn
@@ -1381,7 +1391,7 @@ oof_scores.groupby("model", sort=False)["target"].agg(rows="size", positives="su
 #
 # </details>
 #
-# **3. Dollars beside the ratios.** Raw dollars were tested beside ratios and history. What do they add to the snapshot model alone?
+# **3. Raw items beside the ratios.** Raw items were tested beside ratios and history. What do they add to the snapshot model alone?
 #
 # <details>
 # <summary>Hint</summary>

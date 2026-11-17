@@ -7,7 +7,7 @@
 #
 # > Nothing here is investment advice or a recommendation to buy or sell any security
 #
-# > The data is a public research dataset with anonymised company names
+# > The data is a public research dataset with anonymized company names
 
 # %% [markdown]
 # ## The Question
@@ -32,7 +32,7 @@
 # %% [markdown]
 # ## What You Need
 #
-# Chapter 2, which wrote the labelled panel this chapter reads.
+# Chapter 2, which wrote the labeled panel this chapter reads.
 # The data file is read again for the last filings of failed companies, which the label leaves out.
 #
 # The chapter writes one table, `features`, that every later chapter reads.
@@ -49,7 +49,7 @@
 # %% [markdown]
 # ## The Data Dictionary
 #
-# The chapter reads the labelled panel of Chapter 2.
+# The chapter reads the labeled panel of Chapter 2.
 # Its outcome columns, `target`, `failed`, `last_year`, and `years_to_final`, are described there, and none of them is ever an input to a model.
 #
 # From the accounting items the chapter builds {{ch3.n_ratios}} **ratios**, in {{ch3.n_families}} families.
@@ -74,7 +74,7 @@
 # | | `working_capital_to_assets` | Current assets less current liabilities, over total assets |
 # | | `current_assets_to_assets` | Current assets over total assets |
 # | | `current_liabilities_to_liabilities` | Current liabilities over total liabilities |
-# | Coverage | `ffo_to_liabilities` | Funds from operations (FFO), net income plus depreciation and amortisation, over total liabilities |
+# | Coverage | `ffo_to_liabilities` | Funds from operations (FFO), net income plus depreciation and amortization, over total liabilities |
 # | Activity | `asset_turnover` | Net sales over total assets |
 # | Market | `mve_to_liabilities` | Market value of equity over total liabilities |
 # | | `market_to_book_assets` | Market value of equity plus total liabilities, over total assets |
@@ -92,7 +92,7 @@
 #
 # The industry codes of Chapter 1, `division` and `major_group`, are joined on at the end.
 #
-# Q. What does the chapter need before it starts?
+# Q. What gets imported and loaded?
 
 # %%
 import textwrap
@@ -127,10 +127,9 @@ panel = store.load_frame("labelled_panel")
 raw = load_raw()
 
 # %% [markdown]
-# **Reading.** The labelled panel and the file are in memory, and the house style is set for every chart.
-# `store.put` carries a number from a cell into the text, so no number in this chapter is typed by hand.
+# **Reading.** The labeled panel and the file are in memory, and the house style is set for every chart.
 #
-# Q. What does the labelled panel look like?
+# Q. What does the labeled panel look like?
 
 # %%
 panel.head()
@@ -154,7 +153,7 @@ print(panel.shape)
 panel.info()
 
 # %% [markdown]
-# **Reading.** The table has {{ch3.labelled_rows:,}} rows: the firm-years from {{ch3.first_year}} to {{ch3.last_labelled_year}} that can be labelled.
+# **Reading.** The table has {{ch3.labelled_rows:,}} rows: the firm-years from {{ch3.first_year}} to {{ch3.last_labelled_year}} that can be labeled.
 # Only `target_3` has blanks, where a three-year window runs past the end of the file.
 #
 # Q. What do the outcome columns hold?
@@ -529,7 +528,7 @@ viz.exhibit(
 # <summary>Show the answer</summary>
 #
 # The companies in view {{ch3.years_back}} years out are the ones with long histories.
-# If companies that live long start out stronger than companies that fail young, the line worsens towards the right even when no single company gets worse.
+# If companies that live long start out stronger than companies that fail young, the line worsens toward the right even when no single company gets worse.
 #
 # Following the same companies all the way rules that out, and the first extension of Your Turn does it.
 #
@@ -559,13 +558,13 @@ def wilson_interval(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
         raise ValueError(f"wilson_interval needs n > 0, got n = {n}")
     p = k / n
     denominator = 1 + z**2 / n
-    centre = (p + z**2 / (2 * n)) / denominator
+    center = (p + z**2 / (2 * n)) / denominator
     half = z * np.sqrt(p * (1 - p) / n + z**2 / (4 * n**2)) / denominator
-    return max(0.0, centre - half), min(1.0, centre + half)
+    return max(0.0, center - half), min(1.0, center + half)
 
 
 # %% [markdown]
-# The interval is centred a little towards one half, and it never leaves the range from zero to one.
+# The interval is centered a little toward one half, and it never leaves the range from zero to one.
 # Both matter when the count of positives is small.
 #
 # A curve is said to **turn** when it changes direction by more than its intervals allow.
@@ -949,7 +948,7 @@ viz.exhibit(
 # `liabilities_to_assets` scores {{ch3.leverage_auc:.2f}}.
 # As an amount, total liabilities scored {{ch3.liabilities_dollar_auc:.2f}}: dividing by assets made the signal.
 #
-# The intervals are wide, and most neighbours in the ranking cannot be told apart.
+# The intervals are wide, and most neighbors in the ranking cannot be told apart.
 #
 # One score also hides the shape of Exhibit 3.
 # `asset_turnover` is risky at both ends, so it scores {{ch3.turnover_auc:.2f}}, close to a coin, while holding real information.
@@ -1003,7 +1002,7 @@ for axis in fig.axes:
 
 # %% [markdown]
 # **Reading.** Exhibit 7 has blocks along its diagonal, and each block is mostly one family.
-# For {{ch3.same_family}} of the {{ch3.n_continuous}} ratios the closest neighbour is inside their own family, so the families of the dictionary are in the data too.
+# For {{ch3.same_family}} of the {{ch3.n_continuous}} ratios the closest neighbor is inside their own family, so the families of the dictionary are in the data too.
 #
 # There are {{ch3.twin_pairs}} pairs with a rank correlation of {{ch3.twin_level}} or more in size.
 # One pair is exact, at {{ch3.equity_leverage_corr:.0f}}: `book_equity_to_assets` is one minus `liabilities_to_assets`.
@@ -1018,7 +1017,7 @@ for axis in fig.axes:
 #
 # Leverage and return on assets sit in different blocks, so each carries news the other does not.
 #
-# The map cuts the plane into hexagons and colours each by its failure rate.
+# The map cuts the plane into hexagons and colors each by its failure rate.
 # A hexagon with fewer than {{ch3.map_min_rows}} rows is left blank, because its rate would be noise.
 #
 # A firm-year is called levered here when its liabilities over assets are in the top fifth.
@@ -1049,7 +1048,7 @@ store.put("levered_profit_rate", corner.loc[(True, False), "rate"])
 store.put("unlevered_loss_rate", corner.loc[(False, True), "rate"])
 store.put("neither_rate", corner.loc[(False, False), "rate"])
 
-heat = LinearSegmentedColormap.from_list("heat", ["#F2DCD5", viz.FAILED, "#6E1F10"])
+heat = LinearSegmentedColormap.from_list("heat", viz.RISK)
 fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 4.6))
 image = ax.hexbin(
     on_map["liabilities_to_assets"],
@@ -1086,7 +1085,7 @@ viz.exhibit(
 )
 
 # %% [markdown]
-# **Reading.** In Exhibit 8 the colour deepens towards the lower right, where high leverage meets losses.
+# **Reading.** In Exhibit 8 the color deepens toward the lower right, where high leverage meets losses.
 # The levered firm-years that also report a loss fail at {{ch3.levered_loss_rate:.1%}}.
 #
 # They are {{ch3.levered_loss_rows:.0%}} of the rows and hold {{ch3.levered_loss_positives:.0%}} of the positives.
@@ -1204,7 +1203,7 @@ wide.loc[near_gap, [*KEYS, "roa", "d1_roa", "d2_roa", "years_observed"]].round(3
 
 # %% [markdown]
 # The history comes to {{ch3.n_history}} columns.
-# A one-year change is blank on {{ch3.no_change_share:.0%}} of the labelled rows, mostly a company's first year in the file.
+# A one-year change is blank on {{ch3.no_change_share:.0%}} of the labeled rows, mostly a company's first year in the file.
 #
 # Q. How do the changes move before a last filing?
 
@@ -1477,7 +1476,7 @@ pd.Series(
 ).to_frame()
 
 # %% [markdown]
-# **Reading.** The table `features` has the {{ch3.labelled_rows:,}} rows of the labelled panel and {{ch3.n_features}} model inputs: {{ch3.n_ratios}} ratios and {{ch3.n_history}} history columns.
+# **Reading.** The table `features` has the {{ch3.labelled_rows:,}} rows of the labeled panel and {{ch3.n_features}} model inputs: {{ch3.n_ratios}} ratios and {{ch3.n_history}} history columns.
 #
 # The outcome columns ride along for the checks.
 # The library's `feature_names` lists the inputs, so that no outcome column slips into a model.
@@ -1493,7 +1492,7 @@ pd.Series(
 # 4. Industry is a weak signal: by division the rate runs from {{ch3.construction_rate:.1%}} to {{ch3.retail_rate:.1%}}, with wide intervals (Exhibit 4).
 # 5. A deeper loss is not a higher risk: in the lowest decile of return on assets {{ch3.weak_debt_free:.1%}} of debt-free firm-years fail, against {{ch3.weak_with_debt:.1%}} of those with long-term debt (Exhibit 5).
 # 6. Alone, the best ratio has a ROC-AUC of {{ch3.best_auc:.3f}}, and leverage and market value lead (Exhibit 6).
-# 7. The ratios repeat each other inside families: {{ch3.same_family}} of {{ch3.n_continuous}} have their closest neighbour in their own family (Exhibit 7).
+# 7. The ratios repeat each other inside families: {{ch3.same_family}} of {{ch3.n_continuous}} have their closest neighbor in their own family (Exhibit 7).
 # 8. Leverage and losses together mark the risk: {{ch3.levered_loss_rows:.0%}} of the rows hold {{ch3.levered_loss_positives:.0%}} of the positives (Exhibit 8).
 # 9. Levels show early and changes show late: market value falls {{ch3.mcap_fall_final:.0%}} in the median failed company's last year (Exhibit 9).
 # 10. The ratios drift, size most of all, and a model tells the first era from the last with a ROC-AUC of {{ch3.adversarial_all:.2f}} (Exhibit 10, Exhibit 11).

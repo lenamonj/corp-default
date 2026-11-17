@@ -38,6 +38,8 @@ MODEL_COLORS = {
 # Two groups that are neither outcomes nor models: ink for the subject, this hue for the other.
 ACCENT = "#0B8A6F"
 
+# A failure rate or a predicted probability of failure, low to high: the reds of the outcome.
+RISK = ("#F2DCD5", FAILED, "#6E1F10")
 # Groups in time order, such as cohorts or eras: one hue, and the later the darker.
 COHORTS = ("#A9BFD6", "#5F86AE", "#1F4E7A")
 
@@ -174,7 +176,7 @@ def use_house_style() -> None:
             "xtick.labelcolor": SLATE,
             "ytick.labelcolor": SLATE,
             "lines.linewidth": 2.0,
-            # No default cycle: a series without a colour is ink, so every colour is a choice.
+            # No default cycle: a series without a color is ink, so every color is a choice.
             "axes.prop_cycle": cycler(color=[INK]),
             "legend.frameon": False,
         }

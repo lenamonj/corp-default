@@ -136,7 +136,7 @@ def feature_names(lags: tuple[int, ...] = (1, 2)) -> list[str]:
 def fit_prepare(
     train: pd.DataFrame, cols: list[str], impute: bool = True
 ) -> tuple[Callable[[pd.DataFrame], pd.DataFrame], pd.Series, pd.Series, pd.Series]:
-    """Winsorisation bounds at the 1st and 99th percentiles and fill medians, from `train` only.
+    """Winsorization bounds at the 1st and 99th percentiles and fill medians, from `train` only.
 
     impute=False leaves missing values in place for tree models, which route them themselves.
     """

@@ -18,7 +18,7 @@ from PIL import Image
 DISCLAIMER = (
     "This casebook is educational content created in a personal capacity",
     "Nothing here is investment advice or a recommendation to buy or sell any security",
-    "The data is a public research dataset with anonymised company names",
+    "The data is a public research dataset with anonymized company names",
 )
 MAX_PARAGRAPH = 3  # sentences, written one to a line
 NOT_PROSE = re.compile(r"\||- |#|>|<|!\[|\[!\[|\d+\. ")  # tables, lists, headings, quotes, markup
@@ -199,7 +199,7 @@ def short_paragraphs(ch: Chapter) -> list[str]:
 
 def exhibits_numbered(ch: Chapter) -> list[str]:
     return [
-        f"chart {place} is labelled {alt[:40]!r}: every chart is an exhibit, numbered in order"
+        f"chart {place} is labeled {alt[:40]!r}: every chart is an exhibit, numbered in order"
         for place, (alt, _) in enumerate(ch.exhibits(), start=1)
         if not alt.startswith(f"Exhibit {place}: ")
     ]

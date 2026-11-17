@@ -7,7 +7,7 @@
 #
 # > Nothing here is investment advice or a recommendation to buy or sell any security
 #
-# > The data is a public research dataset with anonymised company names
+# > The data is a public research dataset with anonymized company names
 
 # %% [markdown]
 # ## The Question
@@ -471,7 +471,7 @@ viz.exhibit(
 )
 
 # %% [markdown]
-# **Reading.** Most lines in Exhibit 3 begin at the left edge, in {{ch1.first_year}}, and most end with a grey dot long before the right edge.
+# **Reading.** Most lines in Exhibit 3 begin at the left edge, in {{ch1.first_year}}, and most end with a gray dot long before the right edge.
 # A few lines have a break in them, where a company skips a year or more.
 #
 # **Next, the late arrivals, short histories, and breaks are measured.**
@@ -782,21 +782,21 @@ holds.assign(**{"share of rows": holds["share of rows"].map("{:.4%}".format)})
 #
 # Q. How many independent columns are there?
 #
-# Standardise every column, then take the **singular values** of the table.
+# Standardize every column, then take the **singular values** of the table.
 # Each one measures how much the data varies along one direction.
 #
 # A direction with no variation at all means some column is a combination of the others.
 
 # %%
-standardised = (full[items] - full[items].mean()) / full[items].std()
-singular = np.linalg.svd(standardised.to_numpy(), compute_uv=False)
+standardized = (full[items] - full[items].mean()) / full[items].std()
+singular = np.linalg.svd(standardized.to_numpy(), compute_uv=False)
 relative = singular / singular[0]
 independent = int((relative > 1e-5).sum())
 FLOOR = 1e-9  # the chart's lower edge; smaller values are drawn on it
 
 store.put("independent", independent)
 store.put("dependent", len(items) - independent)
-store.put("default_rank", int(np.linalg.matrix_rank(standardised.to_numpy())))
+store.put("default_rank", int(np.linalg.matrix_rank(standardized.to_numpy())))
 store.put("cliff", relative[independent - 1] / relative[independent])
 
 order = np.arange(1, len(items) + 1)
@@ -935,7 +935,7 @@ viz.exhibit(
 # A **symmetric-log** axis is linear close to zero and logarithmic beyond it, on both sides.
 # `viz.symlog_axis` sets one.
 #
-# The bins follow the same idea, so every bar is about as wide on the page as its neighbours.
+# The bins follow the same idea, so every bar is about as wide on the page as its neighbors.
 
 # %%
 PER_DECADE = 5  # bars to a decade; the linear stretch from zero to one is as wide as a decade

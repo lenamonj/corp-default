@@ -20,7 +20,7 @@
       "naive_value": "{{ch2.flag_auc_rows:.3f}}",
       "honest_label": "ROC-AUC, companies held out whole",
       "honest_value": "{{ch2.flag_auc_companies:.3f}}",
-      "why": "Every row of a company carries the same flag, so a random split lets the model recognise it."
+      "why": "Every row of a company carries the same flag, so a random split lets the model recognize it."
     },
     "censoring": {
       "name": "Treating every other exit as censoring",

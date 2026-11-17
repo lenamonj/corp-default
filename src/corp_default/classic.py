@@ -43,9 +43,9 @@ def altman_z2(frame: pd.DataFrame) -> pd.Series:
 
 
 def altman_zone(z: pd.Series) -> pd.Series:
-    """Altman (1968) p. 606: above 2.99 safe, below 1.81 distress, between them grey."""
+    """Altman (1968) p. 606: above 2.99 safe, below 1.81 distress, between them gray."""
     zones = pd.Series(pd.NA, index=z.index, dtype="string")
     zones.loc[z < ALTMAN_ZONES["distress_below"]] = "distress"
-    zones.loc[z.between(ALTMAN_ZONES["distress_below"], ALTMAN_ZONES["safe_above"])] = "grey"
+    zones.loc[z.between(ALTMAN_ZONES["distress_below"], ALTMAN_ZONES["safe_above"])] = "gray"
     zones.loc[z > ALTMAN_ZONES["safe_above"]] = "safe"
     return zones

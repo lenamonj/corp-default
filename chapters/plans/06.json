@@ -3,7 +3,7 @@
   "title": "The Networks",
   "question": "Can a network read a company's history?",
   "goals": [
-    "Learn the new words, seed, and load.",
+    "Learn the terms, fix the seed, load.",
     "Put every ratio on one scale.",
     "Train a small network on the ratios.",
     "Turn each row into five years.",

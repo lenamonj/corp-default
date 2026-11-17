@@ -209,7 +209,7 @@
       "rows": 2310
     },
     {
-      "cut": "Observation year 2014",
+      "cut": "Fiscal year 2014",
       "failures": 59,
       "high": 0.8558255380819516,
       "low": 0.7578192782059352,
@@ -217,7 +217,7 @@
       "rows": 3471
     },
     {
-      "cut": "Observation year 2015",
+      "cut": "Fiscal year 2015",
       "failures": 47,
       "high": 0.8882619017323251,
       "low": 0.7737611282472233,
@@ -225,7 +225,7 @@
       "rows": 3321
     },
     {
-      "cut": "Observation year 2016",
+      "cut": "Fiscal year 2016",
       "failures": 54,
       "high": 0.8650053231990718,
       "low": 0.7379743790881232,

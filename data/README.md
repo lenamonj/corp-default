@@ -8,7 +8,7 @@ uv run python -m tools.get_data
 
 Run it from the repo root. It writes two files and checks each download against the SHA-256 recorded in [SOURCES.md](../SOURCES.md).
 
-| File | What it is | Where it comes from | Licence as labelled |
+| File | What it is | Where it comes from | License as labeled |
 | --- | --- | --- | --- |
 | `data/american_bankruptcy.csv` | The panel every chapter reads: one row for each company and fiscal year | [Kaggle](https://www.kaggle.com/datasets/utkarshx27/american-companies-bankruptcy-prediction-dataset), a copy of the dataset of Lombardo et al. (2022) | CC0 Public Domain |
 | `data/industry.csv` | The SIC division and major group of each company | The authors' own [repository](https://github.com/sowide/bankruptcy_dataset), from which only the company name and the two industry codes are kept | CC BY 4.0 |

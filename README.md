@@ -5,7 +5,7 @@
 [Start here](#start-here) · [The seven chapters](#the-seven-chapters) · [What the evidence says](#what-the-evidence-says) · [A look inside](#a-look-inside) · [Method](#method) · [Limitations](#limitations) · [Quick Start](#quick-start) · [Dataset](#dataset)
 
 <!-- numbers:start -->
-<img src="assets/readme/landing/numbers.png" width="830" alt="The casebook in numbers. 78,682 firm-years, 1999 to 2018. 8,971 companies, us listed. 609 failed, marked bankrupt. 1.6% base rate, fail within two years. 7 chapters, each a notebook.">
+<img src="assets/readme/landing/numbers.png" width="830" alt="The casebook in numbers. 78,682 firm-years, 1999 to 2018. 8,971 companies, US-listed. 609 failed, marked bankrupt. 1.6% base rate, fail within two years. 7 chapters, each a notebook.">
 <!-- numbers:end -->
 
 ![Python 3.13](https://img.shields.io/badge/Python-3.13-121316?style=for-the-badge&logo=python&logoColor=F2F0EA)
@@ -15,7 +15,7 @@
 ![SHAP](https://img.shields.io/badge/SHAP-explained-121316?style=for-the-badge)
 ![MIT License](https://img.shields.io/badge/License-MIT-121316?style=for-the-badge)
 
-A casebook on corporate default prediction, built on a free public panel of US listed companies.
+A casebook on corporate default prediction, built on a free public panel of US-listed companies.
 It teaches how a default model is built and, above all, how it is honestly evaluated: the label, the split, the yardstick, and a holdout that is opened once.
 
 Each chapter is a notebook that asks one question, shows its evidence as exhibits, sets the naive number beside the honest one, and can be rebuilt with one command.
@@ -25,7 +25,7 @@ The reader is assumed to know Python and basic finance.
 >
 > Nothing here is investment advice or a recommendation to buy or sell any security
 >
-> The data is a public research dataset with anonymised company names
+> The data is a public research dataset with anonymized company names
 
 ## Start Here
 
@@ -40,7 +40,7 @@ The reader is assumed to know Python and basic finance.
 <!-- chapters:start -->
 | Chapter | The question | What you learn |
 | --- | --- | --- |
-| [1. The Panel](notebooks/01_the_panel.ipynb) | What exactly is in this file? | Read a panel before modelling it: who is in it, when, and what the columns can say |
+| [1. The Panel](notebooks/01_the_panel.ipynb) | What exactly is in this file? | Read a panel before modeling it: who is in it, when, and what the columns can say |
 | [2. The Event](notebooks/02_the_event.ipynb) | What does failed mean, and when did it happen? | Turn a company-level flag into a dated event, and count the exits that are not failures |
 | [3. The Signal](notebooks/03_the_signal.ipynb) | Where in the accounts does failure show, and how early? | Find where failure shows in the accounts, how early, and how the ground shifts |
 | [4. The Yardstick](notebooks/04_the_yardstick.ipynb) | How will we know a model is good? | Build the yardstick first: splits by time, an embargo, ranking metrics, honest intervals |
@@ -60,7 +60,7 @@ The later years stay sealed until the last chapter, where each rung is scored on
 <!-- evidence:start -->
 <img src="assets/readme/landing/ladder.png" width="830" alt="The ladder on the holdout: the ROC-AUC of each of the rungs with its interval, and what each adds to the one below. The chosen model scores 0.815, +0.099 against the published Altman Z.">
 
-The holdout is the fiscal years 2014 to 2016: 9,954 firm-years with 160 failures, opened once.
+The holdout covers the fiscal years 2014 to 2016: 9,954 firm-years with 160 failures, opened once.
 
 The chosen model, "All ratios, trees", has a ROC-AUC of 0.815 there, with a 95% interval from 0.779 to 0.850.
 On the walk-forward that chose it, it scored 0.776.
@@ -85,7 +85,7 @@ On companies the model never saw in training, it scores 0.722.
 | 7 | Blend, trees and network | 0.771 | 0.821 | 0.785 to 0.855 | +0.007 (-0.002 to +0.015) | 0.152 | 37.5% | 7.5 |
 <!-- results:end -->
 
-Four things in that table deserve a plain statement.
+Four points about that table:
 
 - The chosen model is not the highest rung on the holdout. It was chosen on the walk-forward, before the holdout was opened, and it stays the chosen model.
 - The broad order holds on both samples and the fine order does not. With this many failures the holdout can separate models that are far apart, and it cannot settle a step of a hundredth.

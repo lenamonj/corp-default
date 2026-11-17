@@ -58,7 +58,7 @@ def test_altman_z2_is_missing_without_liabilities():
 def test_altman_zones_follow_altman_1968():
     assert ALTMAN_ZONES == {"distress_below": 1.81, "safe_above": 2.99}
     zones = altman_zone(pd.Series([1.5, 1.81, 2.5, 2.99, 3.5, np.nan]))
-    assert list(zones.iloc[:5]) == ["distress", "grey", "grey", "grey", "safe"]
+    assert list(zones.iloc[:5]) == ["distress", "gray", "gray", "gray", "safe"]
     assert pd.isna(zones.iloc[5])
 
 

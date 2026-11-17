@@ -7,7 +7,7 @@
 #
 # > Nothing here is investment advice or a recommendation to buy or sell any security
 #
-# > The data is a public research dataset with anonymised company names
+# > The data is a public research dataset with anonymized company names
 
 # %% [markdown]
 # ## The Question
@@ -49,7 +49,7 @@
 # %% [markdown]
 # ## The Data Dictionary
 #
-# The chapter reads `features`: the labelled firm-years with the {{ch4.n_ratios}} ratios and {{ch4.n_history}} history columns of Chapter 3, and the SIC `division` of Chapter 1.
+# The chapter reads `features`: the labeled firm-years with the {{ch4.n_ratios}} ratios and {{ch4.n_history}} history columns of Chapter 3, and the SIC `division` of Chapter 1.
 # It adds no input.
 #
 # What it builds is a table of **out-of-fold scores**, one row for each firm-year a model is tested on.
@@ -70,7 +70,7 @@
 # | **Fold** | One pairing of training rows with validation rows |
 # | **Out of fold** | Scored by a model that did not train on the row |
 #
-# Q. What does the chapter need before it starts?
+# Q. What gets imported and loaded?
 
 # %%
 from collections.abc import Callable, Iterator
@@ -125,7 +125,6 @@ features = store.load_frame("features")
 
 # %% [markdown]
 # **Reading.** The table of Chapter 3 is in memory, and the house style is set for every chart.
-# `store.put` carries a number from a cell into the text, so no number in this chapter is typed by hand.
 #
 # Q. What does the table look like?
 
@@ -278,7 +277,7 @@ split.round(3)
 
 # %% [markdown]
 # **Reading.** The trees score {{ch4.trees_random:.3f}} on rows held out at random and {{ch4.trees_time:.3f}} on later years.
-# The logistic regression moves less, from {{ch4.logit_random:.3f}} to {{ch4.logit_time:.3f}}, because a stiffer model has less room to memorise.
+# The logistic regression moves less, from {{ch4.logit_random:.3f}} to {{ch4.logit_time:.3f}}, because a stiffer model has less room to memorize.
 #
 # The random split also trains on more rows than the years to {{ch4.early_year}} hold, so not all of the gap is memory.
 
@@ -292,7 +291,7 @@ split.round(3)
 # <summary>Show the answer</summary>
 #
 # The first is the same company a year earlier or later.
-# Accounts change slowly, so the model recognises the company and repeats its label.
+# Accounts change slowly, so the model recognizes the company and repeats its label.
 #
 # The second is the test years themselves.
 # A model that trained on other rows of a bad year has learned that the year was bad.
@@ -438,7 +437,7 @@ fold_rows
 # # Preprocessing Inside the Fold
 #
 # Chapter 3 showed ratios with extreme tails.
-# Before a linear model sees a ratio it is clipped at a low and a high percentile, which is called **winsorising**, and a blank is filled with the median.
+# Before a linear model sees a ratio it is clipped at a low and a high percentile, which is called **winsorizing**, and a blank is filled with the median.
 #
 # The bounds and the medians are fitted to data, as a model's weights are.
 # If they are fitted on every row, the validation rows have shaped the model's inputs.
@@ -451,7 +450,7 @@ fold_rows
 def fit_prepare(
     train: pd.DataFrame, cols: list[str], impute: bool = True
 ) -> tuple[Callable[[pd.DataFrame], pd.DataFrame], pd.Series, pd.Series, pd.Series]:
-    """Winsorisation bounds at the 1st and 99th percentiles and fill medians, from `train` only.
+    """Winsorization bounds at the 1st and 99th percentiles and fill medians, from `train` only.
 
     impute=False leaves missing values in place for tree models, which route them themselves.
     """
@@ -895,13 +894,13 @@ def altman_z(frame: pd.DataFrame) -> pd.Series:
 
 # %% [markdown]
 # A high Z is safe.
-# Altman's **zones** call a company distressed below {{ch4.zone_distress}} and safe above {{ch4.zone_safe}}, with a grey zone between.
+# Altman's **zones** call a company distressed below {{ch4.zone_distress}} and safe above {{ch4.zone_safe}}, with a gray zone between.
 #
 # Q. How often does a firm-year in each zone fail, among manufacturers and among the rest?
 
 # %%
 ALTMAN_SAMPLE = 66  # the manufacturers of the 1968 study; see SOURCES.md
-ZONES = ["distress", "grey", "safe"]
+ZONES = ["distress", "gray", "safe"]
 
 zone = altman_zone(altman_z(dev))
 maker = pd.Series(np.where(dev["division"] == "D", "Manufacturers", "All other divisions"))
@@ -936,7 +935,7 @@ ax.set_xticks(
     place,
     [
         f"Distress, Z below {ALTMAN_ZONES['distress_below']}",
-        "Grey zone",
+        "Gray zone",
         f"Safe, Z above {ALTMAN_ZONES['safe_above']}",
     ],
 )
@@ -1104,7 +1103,7 @@ FIVE = list(PUBLISHED.index)
 
 
 def logistic(columns: list[str], C: float):
-    """A walk-forward recipe: clip, fill, and standardise on the training rows, then fit."""
+    """A walk-forward recipe: clip, fill, and standardize on the training rows, then fit."""
 
     def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
         prepare, *_ = fit_prepare(train, columns)
@@ -1178,7 +1177,7 @@ viz.exhibit(
 # Two suspects are left: the scale the ratios are fitted on, and the choice of ratios.
 # The ladder takes the choice first, and the scale is tested after it.
 #
-# The next model takes all {{ch4.n_ratios}}, many of them near copies of each other, so it needs a **penalty** that shrinks the weights towards zero.
+# The next model takes all {{ch4.n_ratios}}, many of them near copies of each other, so it needs a **penalty** that shrinks the weights toward zero.
 #
 # The strength of the penalty is a setting, `C`, and a smaller `C` is a stronger penalty.
 # The rule for choosing it is fixed before any result is seen.
@@ -1225,7 +1224,7 @@ by_strength.round(4)
 #
 # - Altman's Z, with its published weights;
 # - Altman's five ratios, refitted;
-# - all {{ch4.n_ratios}} ratios in a penalised logistic regression.
+# - all {{ch4.n_ratios}} ratios in a penalized logistic regression.
 #
 # They are the first three rungs of the **ladder**, the exhibit this casebook is built around.
 # Each rung is compared with the rung below it on the same draws of companies.
@@ -1436,7 +1435,7 @@ oof_scores.groupby("model")["target"].agg(rows="size", positives="sum")
 # 3. Altman's zones are in the right order, and sharper for manufacturers: {{ch4.maker_distress:.1%}} of them fail in the distress zone, against {{ch4.other_distress:.1%}} of the rest (Exhibit 3).
 # 4. Z ranks with a ROC-AUC of {{ch4.z_auc:.3f}} and goes wrong at its weak end: its riskiest {{ch4.z_top:.0%}} carry a lift of only {{ch4.z_lift_top:.1f}} (Exhibit 4).
 # 5. New weights fitted to the raw ratios do not mend Z: the refit scores {{ch4.refit_auc:.3f}}, a step of {{ch4.refit_step:.3f}}, and it puts {{ch4.refit_market:.0%}} of its pull on one ratio (Exhibit 5, Exhibit 6). On a rank scale the same five ratios are {{ch4.rank_step:.3f}} ahead of Z, with an interval above zero, so the refit lost for its scale and not for having new weights.
-# 6. All {{ch4.n_ratios}} ratios in a penalised logistic regression score {{ch4.all_auc:.3f}}, a step of {{ch4.all_step:.3f}} over the refit, and that step brings more ratios and a log scale for size together (Exhibit 6).
+# 6. All {{ch4.n_ratios}} ratios in a penalized logistic regression score {{ch4.all_auc:.3f}}, a step of {{ch4.all_step:.3f}} over the refit, and that step brings more ratios and a log scale for size together (Exhibit 6).
 
 # %% [markdown]
 # # Your Turn

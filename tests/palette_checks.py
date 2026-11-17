@@ -1,7 +1,7 @@
 """The computable palette checks of the dataviz method, in Python, for the test suite.
 
 Lightness band, chroma floor, contrast against the surface, and the normal-vision floor. The
-colour-blind separation check was run with the dataviz skill's own validator; the ledger has it.
+color-blind separation check was run with the dataviz skill's own validator; the ledger has it.
 """
 
 import itertools

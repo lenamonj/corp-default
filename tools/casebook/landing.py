@@ -35,7 +35,7 @@ LINE = "A casebook on predicting bankruptcy in US public companies"
 SOCIAL_WIDTH = 640  # drawn at twice that: 1280 by 640, the size GitHub asks for
 
 LEARN = {
-    1: "Read a panel before modelling it: who is in it, when, and what the columns can say",
+    1: "Read a panel before modeling it: who is in it, when, and what the columns can say",
     2: "Turn a company-level flag into a dated event, and count the exits that are not failures",
     3: "Find where failure shows in the accounts, how early, and how the ground shifts",
     4: "Build the yardstick first: splits by time, an embargo, ranking metrics, honest intervals",
@@ -115,7 +115,7 @@ def hero(mark: dict, known: dict) -> str:
 def number_facts(known: dict) -> list[tuple[str, str, str]]:
     return [
         (f"{known['firm_years']:,}", "FIRM-YEARS", years(known)),
-        (f"{known['companies']:,}", "COMPANIES", "US listed"),
+        (f"{known['companies']:,}", "COMPANIES", "US-listed"),
         (f"{known['failed_companies']:,}", "FAILED", "Marked bankrupt"),
         (f"{known['base_rate']:.1%}", "BASE RATE", "Fail within two years"),
         (str(known["chapters"]), "CHAPTERS", "Each a notebook"),
@@ -249,7 +249,7 @@ def evidence_words(claims: dict) -> str:
     return "\n".join(
         [
             (
-                f"The holdout is the fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}: {claims['holdout_rows']} "
+                f"The holdout covers the fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}: {claims['holdout_rows']} "
                 f"firm-years with {claims['holdout_failures']} failures, opened once."
             ),
             "",
@@ -281,7 +281,10 @@ def blocks() -> dict[str, str]:
     metrics = json.loads((RESULTS / "metrics.json").read_text(encoding="utf-8"))
     claims = json.loads((RESULTS / "claims.json").read_text(encoding="utf-8"))
     counted = ", ".join(f"{n} {what.lower()}" for n, what, _ in number_facts(known)[:3])
-    said = ". ".join(f"{n} {what.lower()}, {more.lower()}" for n, what, more in number_facts(known))
+    said = ". ".join(
+        f"{n} {what.lower()}, {more if more.startswith('US') else more.lower()}"
+        for n, what, more in number_facts(known)
+    )
     return {
         "hero": picture(
             "hero",

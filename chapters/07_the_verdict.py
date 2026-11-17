@@ -7,7 +7,7 @@
 #
 # > Nothing here is investment advice or a recommendation to buy or sell any security
 #
-# > The data is a public research dataset with anonymised company names
+# > The data is a public research dataset with anonymized company names
 
 # %% [markdown]
 # ## The Question
@@ -69,7 +69,7 @@
 # | **Holdout** | The fiscal years {{ch7.holdout_first}} to {{ch7.holdout_last}}, sealed since Chapter 4 |
 # | **SHAP value** | The part of one row's score that is credited to one of its inputs |
 #
-# Q. What does the chapter need before it starts?
+# Q. What gets imported and loaded?
 
 # %%
 from collections.abc import Callable
@@ -80,7 +80,7 @@ import pandas as pd
 import shap
 import torch
 from matplotlib.colors import LinearSegmentedColormap
-from matplotlib.ticker import MultipleLocator, PercentFormatter
+from matplotlib.ticker import FuncFormatter, MultipleLocator, PercentFormatter
 from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
@@ -115,15 +115,6 @@ frozen = store.load_json("frozen")
 
 # %% [markdown]
 # **Reading.** The table of Chapter 3, the scores of Chapters 4 to 6, and the record of each model are in memory.
-# `store.put` carries a number from a cell into the text, so no number in this chapter is typed by hand.
-#
-# Q. What do the scores so far look like?
-
-# %%
-oof_scores.head()
-
-# %% [markdown]
-# **Reading.** Each row is one firm-year scored by one model: the score, and its percentile within the year.
 #
 # Q. How large are the tables, and how do the seven rungs rank the same rows?
 
@@ -199,7 +190,7 @@ record
 # %% [markdown]
 # # From Scores to Probabilities
 #
-# A ranking tells a desk which names to read first.
+# A ranking tells a desk which companies to read first.
 # A credit decision also needs a level: a **probability of default**, or PD.
 #
 # The model's own output is a poor PD.
@@ -279,7 +270,7 @@ brier.round(5).to_frame("Brier score, cross-fitted by year")
 # %%
 # taught: corp_default.metrics.reliability_table
 def reliability_table(y_true, prob, bins: int = 10) -> pd.DataFrame:
-    """Realised rate against mean predicted probability in quantile bins, with Wilson intervals."""
+    """Realized rate against mean predicted probability in quantile bins, with Wilson intervals."""
     frame = pd.DataFrame({"y": np.asarray(y_true), "prob": np.asarray(prob, dtype=float)})
     frame["bin"] = pd.qcut(frame["prob"], bins, duplicates="drop")
     table = frame.groupby("bin", observed=True).agg(
@@ -293,7 +284,7 @@ def reliability_table(y_true, prob, bins: int = 10) -> pd.DataFrame:
 
 
 # %% [markdown]
-# **Reading.** `qcut` makes bins of equal size, and each bin gets its mean probability, its realised rate, and a Wilson interval for that rate.
+# **Reading.** `qcut` makes bins of equal size, and each bin gets its mean probability, its realized rate, and a Wilson interval for that rate.
 #
 # Q. Do the cross-fitted probabilities match what happened?
 
@@ -301,13 +292,15 @@ def reliability_table(y_true, prob, bins: int = 10) -> pd.DataFrame:
 fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 4.2))
 tables = {name: reliability_table(chosen_oof["target"], pd_) for name, pd_ in crossed.items()}
 for name, table in tables.items():
-    color = COLORS["trees"] if name == MAP else viz.MIST
+    color = COLORS["trees"] if name == MAP else viz.ACCENT
     ax.vlines(table["mean_prob"], table["lo"], table["hi"], color=color, linewidth=1.2)
     ax.scatter(table["mean_prob"], table["rate"], s=30, color=color, zorder=3, label=name)
 ends = [min(t["mean_prob"].min() for t in tables.values()) * 0.8, 0.2]
 ax.plot(ends, ends, color=viz.INK, linewidth=0.8)
 viz.log_axis(ax, "x")
 viz.log_axis(ax, "y")
+for axis in (ax.xaxis, ax.yaxis):
+    axis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:.1%}" if v < 0.01 else f"{v:.0%}"))
 ax.set_xlabel("Mean probability of default in the bin")
 ax.set_ylabel("Share of the bin that failed")
 ax.legend(frameon=False, loc="upper left")
@@ -322,7 +315,7 @@ store.put("top_bin_rate", tables[MAP]["rate"].iloc[-1])
 
 viz.exhibit(
     fig,
-    f"In {int(inside.sum())} of {len(inside)} bins the probability sits inside the interval of what happened",
+    f"{MAP}: in {int(inside.sum())} of {len(inside)} bins the probability is inside the interval",
     "Each dot is a bin of firm-years, with a 95% Wilson interval. On the line, probability and "
     "outcome agree.",
     OOF_SOURCE,
@@ -448,7 +441,7 @@ def grade_of(pct: pd.Series) -> np.ndarray:
 
 
 def grade_table(rows: pd.DataFrame, pds: np.ndarray) -> pd.DataFrame:
-    """Firm-years, failures, realised rate with its interval, and mean PD, for each grade."""
+    """Firm-years, failures, realized rate with its interval, and mean PD, for each grade."""
     table = (
         rows.assign(pd=pds, grade=grade_of(rows["pct"]))
         .groupby("grade")
@@ -463,14 +456,20 @@ def grade_table(rows: pd.DataFrame, pds: np.ndarray) -> pd.DataFrame:
 
 
 def grade_ladder(table: pd.DataFrame, pds: pd.Series) -> plt.Figure:
-    """Realised rate by grade with intervals, against the PD attached to each grade."""
+    """Realized rate by grade with intervals, against the PD attached to each grade."""
     fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 3.6))
     ax.vlines(table.index, table["lo"], table["hi"], color=viz.INK, linewidth=1.2)
     ax.scatter(table.index, table["rate"], s=30, color=viz.INK, zorder=3, label="Share that failed")
     ax.scatter(pds.index, pds, s=120, marker="_", color=COLORS["trees"], linewidth=2.2, zorder=4,
                label="PD of the grade")  # fmt: skip
     viz.log_axis(ax, "y")
-    ax.yaxis.set_major_formatter(PercentFormatter(1, decimals=1))
+    ticks = [
+        t
+        for t in (0.001, 0.003, 0.01, 0.03, 0.1, 0.3)
+        if table["lo"].min() * 0.7 <= t <= table["hi"].max() * 1.4
+    ]
+    ax.set_yticks(ticks, [f"{t:.1%}" if t < 0.01 else f"{t:.0%}" for t in ticks])
+    ax.minorticks_off()
     ax.set_xlabel("Grade, safest to riskiest")
     ax.legend(frameon=False, loc="upper left")
     ax.grid(axis="x", visible=False)
@@ -665,7 +664,7 @@ board[
 # The chosen model is ahead of the published score by {{ch7.primary_step:.3f}}, with an interval from {{ch7.primary_step_low:.3f}} to {{ch7.primary_step_high:.3f}}.
 #
 # The holdout has {{ch7.n_holdout:,}} firm-years and {{ch7.holdout_failures}} failures.
-# The model's top twentieth of each year holds {{ch7.holdout_capture_5:.1%}} of them, with an interval from {{ch7.holdout_capture_5_low:.1%}} to {{ch7.holdout_capture_5_high:.1%}}.
+# The middle budget, the model's riskiest {{ch7.budget:.0%}} of each year, holds {{ch7.holdout_capture_5:.1%}} of them, with an interval from {{ch7.holdout_capture_5_low:.1%}} to {{ch7.holdout_capture_5_high:.1%}}.
 #
 # **Next, the other rungs.**
 
@@ -705,11 +704,16 @@ for y_at, (name, row), kind in zip(place[1:], steps.iterrows(), KINDS[1:]):
     change.plot([row["roc_auc_diff_lo"], row["roc_auc_diff_hi"]], [y_at, y_at], color=COLORS[kind],
                 linewidth=1.6)  # fmt: skip
     change.scatter(row["roc_auc_diff"], y_at, s=46, color=COLORS[kind], zorder=3)
-    change.annotate(f"{row['roc_auc_diff']:+.3f}", (row["roc_auc_diff"], y_at), xytext=(0, 8),
-                    textcoords="offset points", ha="center", size=9)  # fmt: skip
+    change.annotate(f"{row['roc_auc_diff']:+.3f}", (row["roc_auc_diff"], y_at), xytext=(0, 9),
+                    textcoords="offset points", ha="center", size=9, zorder=4,
+                    bbox={"facecolor": viz.SHEET, "edgecolor": "none", "pad": 1})  # fmt: skip
 change.axvline(0, color=viz.INK, linewidth=0.8)
-level.set_yticks(place, [f"{k + 1}  {name}" for k, name in enumerate(verdict)])
-level.set_ylim(-0.6, len(verdict) - 0.4)
+level.set_yticks(
+    place,
+    [f"{k + 1}  {name}" + (", chosen" if name == CHOSEN else "") for k, name in enumerate(verdict)],
+)
+level.get_yticklabels()[list(verdict).index(CHOSEN)].set_fontweight(700)
+level.set_ylim(-0.6, len(verdict) - 0.2)
 level.set_title("ROC-AUC on the holdout")
 level.xaxis.set_major_locator(MultipleLocator(0.05))
 change.set_title("What the rung adds to the one below")
@@ -740,10 +744,9 @@ store.put("refit_step", steps.loc[REFIT, "roc_auc_diff"])
 
 viz.exhibit(
     fig,
-    f"On the holdout the chosen model scores {top['roc_auc']:.3f}, {primary['roc_auc_diff']:.3f} above the "
-    "published score",
-    "Holdout scores with 95% cluster-bootstrap intervals. Open circles: the walk-forward score. "
-    "Right: paired differences.",
+    f"Chosen model: {top['roc_auc']:.3f} on the holdout, {primary['roc_auc_diff']:.3f} above Altman Z, "
+    "and not the top rung",
+    "Holdout, 95% cluster-bootstrap intervals. Open circles: walk-forward. Right: paired differences.",
     f"{SOURCE}; fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
     save_as="ladder",
 )
@@ -783,7 +786,7 @@ both.round(3)
 # # Capture Curves
 #
 # A desk does not review a ROC-AUC.
-# It reviews a share of its names each year, and what matters is how many of the failures were on that list.
+# It reviews a share of its companies each year, and what matters is how many of the failures were on that list.
 #
 # Q. How many failures does each review budget find, and how sure is that?
 
@@ -810,7 +813,7 @@ for name, kind in ((CLASSIC, "classic"), (CHOSEN, "trees")):
     ax.annotate(name, (grid[-1], np.interp(grid[-1], reviewed, captured)), xytext=(-4, 8),
                 textcoords="offset points", color=COLORS[kind], size=9, ha="right")  # fmt: skip
 ax.plot(grid, grid, color=viz.INK, linewidth=0.8, linestyle="--")
-ax.annotate("names picked at random", (grid[-1], grid[-1]), xytext=(-4, -18),
+ax.annotate("firm-years picked at random", (grid[-1], grid[-1]), xytext=(-4, 7),
             textcoords="offset points", color=viz.SLATE, size=9, ha="right")  # fmt: skip
 ax.xaxis.set_major_formatter(PercentFormatter(1, decimals=0))
 ax.yaxis.set_major_formatter(PercentFormatter(1, decimals=0))
@@ -841,8 +844,8 @@ store.put("reviewed_5", int(on_list.sum()))
 
 viz.exhibit(
     fig,
-    f"The top 5% of each year holds {top['capture_5']:.0%} of the failures, and "
-    f"{board.loc[CLASSIC, 'capture_5']:.0%} by the published score",
+    f"Reviewing the top 5% of each year finds {top['capture_5']:.0%} of failures; Altman Z finds "
+    f"{board.loc[CLASSIC, 'capture_5']:.0%}",
     "Capture curves on the holdout with 95% cluster-bootstrap bands.",
     f"{SOURCE}; fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
 )
@@ -850,17 +853,17 @@ budgets.round(3)
 
 # %% [markdown]
 # **Reading.** In Exhibit 5 the chosen model's curve climbs at once.
-# The top hundredth of each year holds {{ch7.holdout_capture_1:.1%}} of the failures, the top twentieth {{ch7.holdout_capture_5:.1%}}, and the top tenth {{ch7.holdout_capture_10:.1%}}.
+# The three budgets of Chapter 4, from the smallest to the largest, hold {{ch7.holdout_capture_1:.1%}}, {{ch7.holdout_capture_5:.1%}}, and {{ch7.holdout_capture_10:.1%}} of the failures.
 #
-# A desk that read the top twentieth of each year, {{ch7.reviewed_5}} of the {{ch7.n_holdout:,}} firm-years, would have had {{ch7.found_5}} of the {{ch7.holdout_failures}} failures on its list.
+# A desk that read the middle budget, {{ch7.reviewed_5}} of the {{ch7.n_holdout:,}} firm-years, would have had {{ch7.found_5}} of the {{ch7.holdout_failures}} failures on its list.
 #
-# The published score finds {{ch7.classic_capture_5:.1%}} at the same budget, which is no better than names picked at random.
+# The published score finds {{ch7.classic_capture_5:.1%}} at the same budget, which is no better than firm-years picked at random.
 # Its ROC-AUC comes from ordering the broad middle, and it fails where a desk looks, at the top.
 #
 # **Next, the probabilities.**
 
 # %% [markdown]
-# # Did the Probabilities Hold
+# # Did the Probabilities Hold?
 #
 # The map and the grades were fixed before the holdout was opened.
 # Each holdout firm-year now gets its PD from its percentile, and its grade from the same bands.
@@ -990,10 +993,9 @@ assert robust.loc["Without unconfirmed failures", "roc_auc"] > top["roc_auc"]
 
 viz.exhibit(
     fig,
-    f"Companies never seen score {robust.loc['Companies never seen', 'roc_auc']:.3f}, and companies "
-    f"seen before {robust.loc['Companies seen in development', 'roc_auc']:.3f}",
-    "ROC-AUC with 95% cluster-bootstrap intervals. The number after each cut is its failures. "
-    "Dashed: the whole holdout.",
+    f"The model ranks companies it never saw at {robust.loc['Companies never seen', 'roc_auc']:.3f}, "
+    f"against {robust.loc['Companies seen in development', 'roc_auc']:.3f} for those it did",
+    "95% cluster-bootstrap intervals. After each cut: its failures. Dashed: the whole holdout.",
     f"{SOURCE}; fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
 )
 robust.round(3)
@@ -1002,10 +1004,10 @@ robust.round(3)
 # **Reading.** In Exhibit 7 every cut's interval holds the score of the whole holdout, the dashed line.
 #
 # The cut to watch is the companies the model never saw: {{ch7.unseen_auc:.3f}}, with an interval from {{ch7.unseen_low:.3f}} to {{ch7.unseen_high:.3f}}, against {{ch7.seen_auc:.3f}} for companies from the development years.
-# Only {{ch7.unseen_failures}} failures stand behind it, so the interval is wide, but a new name is the case a desk cares about most.
+# Only {{ch7.unseen_failures}} failures stand behind it, so the interval is wide, but a new company is the case a desk cares about most.
 #
-# {{ch7.seen_share:.0%}} of holdout firm-years belong to companies from the development years, so the headline leans on familiar names.
-# Every company never seen first filed after {{ch7.dev_last}}, so the gap may come from newer firms as much as from unfamiliar ones.
+# {{ch7.seen_share:.0%}} of holdout firm-years belong to companies from the development years, so the headline leans on familiar companies.
+# Every company never seen first filed after {{ch7.dev_last}}, so the gap may come from newer companies as much as from unfamiliar ones.
 #
 # Without the {{ch7.n_unconfirmed}} unconfirmed failures the score is {{ch7.confirmed_auc:.3f}}, so they are not what holds the result up.
 # The model ranks failure within one year best, at {{ch7.one_year_auc:.3f}}, and failure within three years at {{ch7.three_year_auc:.3f}}.
@@ -1052,6 +1054,7 @@ drops = pd.Series(drops)
 fig, (left, right) = plt.subplots(1, 2, figsize=(viz.EXHIBIT_WIDTH_IN, 3.6), sharey=True)
 left.barh(shap_share.index, shap_share, color=COLORS["trees"])
 right.barh(shap_share.index, drops[shap_share.index], color=COLORS["trees"])
+left.set_yticks(range(len(shap_share)), [family.capitalize() for family in shap_share.index])
 left.set_title("Share of the SHAP credit")
 right.set_title("ROC-AUC lost when the family is shuffled")
 left.xaxis.set_major_formatter(PercentFormatter(1, decimals=0))
@@ -1103,7 +1106,7 @@ for y_at, name in enumerate(TOP[::-1]):
     ax.scatter(credit[name], y_at + jitter, c=rank_of[name], cmap=ramp, s=5, linewidths=0,
                rasterized=True)  # fmt: skip
 ax.axvline(0, color=viz.INK, linewidth=0.8)
-ax.set_yticks(range(len(TOP)), TOP[::-1])
+ax.set_yticks(range(len(TOP)), [viz.label(name) for name in TOP[::-1]])
 ax.set_xlabel("SHAP value: push on the score, in log odds")
 ax.grid(axis="y", visible=False)
 
@@ -1119,8 +1122,8 @@ assert TOP[0] == "mve_to_liabilities"
 
 viz.exhibit(
     fig,
-    f"{TOP[0]} moves the score most, then {TOP[1]} and {TOP[2]}",
-    "One dot for each holdout firm-year and ratio. Dark is a high value of the ratio, pale a low one.",
+    f"{viz.label(TOP[0])} moves the score most",
+    "One dot per holdout firm-year and ratio. Dark is a high value of the ratio, pale a low one.",
     f"{SOURCE}; fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
 )
 direction.round(2).to_frame("rank correlation of the ratio with its SHAP value")
@@ -1143,8 +1146,12 @@ for ax, name in zip(axes, TOP[:3]):
     ax.scatter(rank_of[name], credit[name], c=rank_of[partner], cmap=ramp, s=5, linewidths=0,
                rasterized=True)  # fmt: skip
     ax.axhline(0, color=viz.INK, linewidth=0.8)
-    ax.set_title(name)
-    ax.set_xlabel(f"Percentile of the ratio\ncolour: {partner}")
+    ax.set_title(viz.label(name, short=True))
+    ax.set_xlabel("Percentile of the ratio")
+    ax.text(0.97, 0.95, f"shade: {viz.label(partner, short=True)}", transform=ax.transAxes, ha="right",
+            va="top", size=8.5, color=viz.SLATE)  # fmt: skip
+    ax.set_xlim(-0.04, 1.04)
+    ax.set_xticks([0, 0.25, 0.5, 0.75, 1])
     ax.xaxis.set_major_formatter(PercentFormatter(1, decimals=0))
 axes[0].set_ylabel("SHAP value, in log odds")
 
@@ -1155,10 +1162,8 @@ upper_fall = middle - credit.loc[rank_of[TOP[0]] > 0.9, TOP[0]].median()
 assert upper_fall < 0.25 * lower_fall
 viz.exhibit(
     fig,
-    f"The push from {TOP[0]} falls {lower_fall:.2f} over its lower half and {upper_fall:.2f} over "
-    "its upper",
-    "Holdout firm-years. Colour is the percentile of the ratio that most changes the picture, "
-    "dark for high.",
+    f"The push from {viz.label(TOP[0]).lower()} is flat above the median",
+    "Holdout firm-years. Shade: percentile of the ratio it interacts with most, dark for high.",
     f"{SOURCE}; fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
 )
 
@@ -1220,7 +1225,9 @@ for (path, bars), (label, row) in zip(axes, CASES.items()):
     pushes = credit.loc[row].sort_values(key=np.abs, ascending=False).iloc[:6][::-1]
     values = inputs_holdout.loc[row, pushes.index]
     names = [
-        f"{name} = {value:,.2f}" if pd.notna(value) else f"{name}: blank"
+        f"{viz.label(name, short=True)} = {value:,.2f}"
+        if pd.notna(value)
+        else f"{viz.label(name, short=True)}: blank"
         for name, value in values.items()
     ]
     bars.barh(names, pushes, color=COLORS["trees"])
@@ -1231,6 +1238,12 @@ for (path, bars), (label, row) in zip(axes, CASES.items()):
                   "grade": int(grade_of(hold.loc[[row], "pct"])[0]), "PD": pd_holdout[row],
                   "last filing": int(sealed.loc[row, "last_year"]), "status": sealed.loc[row, "status_label"],
                   "main push": pushes.index[-1]})  # fmt: skip
+# One scale for the three sets of pushes, so a bar's length means the same in each.
+reach = max(abs(limit) for _, bars in axes for limit in bars.get_xlim())
+for _, bars in axes:
+    bars.set_xlim(-reach, reach)
+axes[1][0].annotate(f"top {BUDGET:.0%}", (int(features["year"].min()), 1 - BUDGET), xytext=(2, -11),
+                    textcoords="offset points", size=8.5, color=viz.SLATE)  # fmt: skip
 files = pd.DataFrame(files).set_index("case")
 
 store.put("budget", BUDGET)
@@ -1260,7 +1273,7 @@ viz.exhibit(
     fig,
     f"The caught case ranked above {files.loc['Caught', 'percentile']:.0%} of its year, and the "
     f"missed one above {files.loc['Missed', 'percentile']:.0%}",
-    "Left: percentile through time, a dot at the case year, the holdout shaded. Right: SHAP values.",
+    "Left: percentile by year, a dot at the case year, holdout shaded. Right: SHAP values.",
     f"{SOURCE}; chosen by rule from fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
 )
 files.round(3)
@@ -1275,12 +1288,12 @@ files.round(3)
 # Its losses pushed the score up, and its small size and a market value above its liabilities pushed it down; it is also one of the unconfirmed failures.
 #
 # The false alarm looks like the caught case on paper.
-# It filed for the last time in {{ch7.false_alarm_last}}, a year after the flag, and the file marks it "{{ch7.alarm_status}}", which Chapter 2 warned is not the same as healthy.
+# It filed for the last time in {{ch7.false_alarm_last}}, a year after it made the list, and the file marks it "{{ch7.alarm_status}}", which Chapter 2 warned is not the same as healthy.
 #
 # **Next, how early the model sees a failure coming.**
 
 # %% [markdown]
-# # How Early Does It See
+# # How Early Does It See?
 #
 # A warning one year before the last filing helps less than one three years before.
 # The holdout holds firm-years of failed companies from one to four years ahead of their last filing.
@@ -1335,10 +1348,9 @@ assert ahead.loc[ahead.index.max(), "flagged"] == 0
 
 viz.exhibit(
     fig,
-    f"{ahead.index.max()} years out the median failing company ranks above "
-    f"{ahead.loc[ahead.index.max(), 'median']:.0%}, one year out above {ahead.loc[1, 'median']:.0%}",
-    "Holdout firm-years of companies that later failed. Dashed: what a company picked at random "
-    "would show.",
+    f"One year out the median failing company ranks above {ahead.loc[1, 'median']:.0%}; "
+    f"{ahead.index.max()} years out, above {ahead.loc[ahead.index.max(), 'median']:.0%}",
+    "Holdout firm-years of companies that later failed. Dashed: a company picked at random.",
     f"{SOURCE}; fiscal years {HOLDOUT[0]} to {HOLDOUT[1]}",
 )
 ahead.round(3)
@@ -1348,7 +1360,7 @@ ahead.round(3)
 # {{ch7.farthest}} years before the last filing the median failing company already ranks above {{ch7.median_4_out:.0%}} of its year, where a company picked at random would rank above half.
 #
 # One year out it ranks above {{ch7.median_1_out:.0%}}.
-# The list is slower than the rank: none of the firm-years {{ch7.farthest}} years out is in the top twentieth, and one year out {{ch7.flagged_1_out:.0%}} are.
+# The list is slower than the rank: none of the firm-years {{ch7.farthest}} years out is inside the middle budget, and one year out {{ch7.flagged_1_out:.0%}} are.
 #
 # So the model sees trouble early, as a drift up the ranking, and names it late.
 #
@@ -1428,14 +1440,20 @@ pd.Series(claims).to_frame("what the front page quotes")
 # - The model is {{ch7.model_age_low}} to {{ch7.model_age_high}} years old when the holdout scores it.
 # - The PD is an average over the cycle and will be wrong in most single years.
 #
-# **That is the verdict, and the casebook ends here.**
+# The verdict, read with those limits: on years it never saw, a tree model on ratios ranks failures {{ch7.primary_step:.3f}} of ROC-AUC ahead of the published Altman Z, and its middle budget holds {{ch7.holdout_capture_5:.0%}} of them.
+# Trust it to order one year's review list, and do not trust its probability in any single year.
+#
+# **The casebook ends here, with the verdict on one plate.**
+
+# %% [markdown]
+# <!-- diagram: verdict -->
 
 # %% [markdown]
 # # Findings
 #
 # 1. On the holdout the chosen model has a ROC-AUC of {{ch7.holdout_auc:.3f}}, with an interval from {{ch7.holdout_auc_low:.3f}} to {{ch7.holdout_auc_high:.3f}}, above its walk-forward score of {{ch7.walked_auc:.3f}} (Exhibit 4).
 # 2. The primary comparison is settled: the chosen model is {{ch7.primary_step:.3f}} ahead of the published Altman Z, with an interval above zero (Exhibit 4).
-# 3. The top twentieth of each year holds {{ch7.holdout_capture_5:.1%}} of the failures, where the published score finds {{ch7.classic_capture_5:.1%}} (Exhibit 5).
+# 3. The middle budget holds {{ch7.holdout_capture_5:.1%}} of the failures, where the published score finds {{ch7.classic_capture_5:.1%}} (Exhibit 5).
 # 4. The broad order of the ladder holds and the fine order does not: {{ch7.n_settled}} of {{ch7.n_steps}} steps are clear of zero, and history is a step of {{ch7.history_step:.3f}} where the walk-forward had a step down (Exhibit 4).
 # 5. A PD built from the percentile is an average over the cycle: by year it stays between {{ch7.flat_low:.1%}} and {{ch7.flat_high:.1%}} while the share that failed runs from {{ch7.rate_low:.1%}} to {{ch7.rate_high:.1%}} (Exhibit 2).
 # 6. The seven grades keep their order on the holdout, and the PD fixed beforehand is inside the interval for {{ch7.grades_inside}} of them (Exhibit 6).

@@ -7,7 +7,7 @@
 #
 # > Nothing here is investment advice or a recommendation to buy or sell any security
 #
-# > The data is a public research dataset with anonymised company names
+# > The data is a public research dataset with anonymized company names
 
 # %% [markdown]
 # ## The Question
@@ -72,11 +72,11 @@
 # | **Batch** | The handful of rows the network sees before each small correction |
 # | **Learning rate** | The size of each correction to the weights |
 # | **Dropout** | Switching off a random share of a layer during training, so that no single unit is relied on |
-# | **Weight decay** | A steady pull of every weight towards zero |
+# | **Weight decay** | A steady pull of every weight toward zero |
 # | **Early stopping** | Ending training when rows set aside stop being predicted better |
 # | **Seed** | The number that fixes every random choice, so that a run can be repeated |
 #
-# Q. What does the chapter need before it starts?
+# Q. What gets imported and loaded?
 
 # %%
 import copy
@@ -112,7 +112,6 @@ frozen = store.load_json("frozen")
 
 # %% [markdown]
 # **Reading.** The table of Chapter 3, the scores of Chapters 4 and 5, and the record of each model are in memory.
-# `store.put` carries a number from a cell into the text, so no number in this chapter is typed by hand.
 #
 # A network starts from random weights, sees its rows in a random order, and drops units at random.
 # The next function fixes all of that.
@@ -135,14 +134,6 @@ def seed_everything(seed: int = 42) -> None:
 # %% [markdown]
 # **Reading.** Three libraries draw random numbers, and each gets the seed.
 # The last two lines ask PyTorch to give the same answer on every run, at the price of some speed.
-#
-# Q. What do the scores of the earlier chapters look like?
-
-# %%
-earlier.head()
-
-# %% [markdown]
-# **Reading.** Each row is one firm-year scored by one model: the score, and its percentile within the year.
 #
 # Q. How large are the tables, and which tree model goes forward?
 
@@ -256,7 +247,7 @@ for column, (name, label) in enumerate(SHOWN.items()):
     for ax, (values, when) in zip(axes[:, column], versions):
         ax.hist(values.dropna(), bins=60, color=viz.SLATE)
         ax.set_title(f"{when}: fullest bar {tallest_bar(values):.0%}")
-        ax.set_xlabel(label)
+        ax.set_xlabel(label if when == "As it comes" else f"{label}, as a normal score")
         ax.xaxis.set_major_locator(MaxNLocator(5))
         ax.xaxis.set_major_formatter(FuncFormatter(viz.plain_number))
         ax.set_yticks([])
@@ -272,8 +263,7 @@ assert inputs_last[RATIOS].abs().max().max() < 6
 
 viz.exhibit(
     fig,
-    f"As it comes, {tallest_bar(train_last['roa']):.0%} of one ratio sits in a single bar of sixty; "
-    f"transformed, {tallest_bar(inputs_last['roa']):.0%}",
+    "Raw ratios pile into one bar; after the transform they spread into a bell",
     "Two ratios before and after the quantile transform. Each panel has sixty bars over its own range.",
     f"{SOURCE}; training rows of the last fold, to {train_last['year'].max()}",
 )
@@ -511,7 +501,7 @@ def learning_curves(fits: pd.DataFrame) -> plt.Figure:
     ]
     chosen = fits.loc[fits["fold"] == last.year, "epochs"]
     for history, epochs in zip(histories, chosen):
-        ax.plot(history["train_loss"], color=viz.MIST, linewidth=1.2)
+        ax.plot(history["train_loss"], color=viz.INK, linewidth=1.0)
         ax.plot(history["valid_loss"], color=NETWORKS, linewidth=1.6)
         ax.scatter(epochs, history.loc[epochs, "valid_loss"], s=44, color=NETWORKS, zorder=3)
     # The first epoch's training loss is far above the rest, so the frame is cut below it.
@@ -522,9 +512,10 @@ def learning_curves(fits: pd.DataFrame) -> plt.Figure:
     ax.annotate("rows set aside to stop on", (len(longest), longest["valid_loss"].iloc[-1]),
                 xytext=(0, 14), textcoords="offset points", color=NETWORKS, size=9, ha="right")  # fmt: skip
     ax.annotate("training rows", (len(longest), longest["train_loss"].iloc[-1]),
-                xytext=(0, -15), textcoords="offset points", color=viz.SLATE, size=9, ha="right")  # fmt: skip
+                xytext=(0, -15), textcoords="offset points", color=viz.INK, size=9, ha="right")  # fmt: skip
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Loss")
+    ax.set_xlim(0, None)
     ax.xaxis.set_major_locator(MultipleLocator(5))
     return fig
 
@@ -889,39 +880,40 @@ def cumulative_pd(hazards: np.ndarray) -> np.ndarray:
 # The three-year outcome is compared only on rows up to {{ch6.last_3y_year}}.
 # A three-year label on a later row would reach into the years this casebook keeps sealed until Chapter 7.
 #
-# Q. Does the term structure match what happened, from the safest tenth of firm-years to the riskiest?
+# Q. Does the term structure match what happened, from the safest decile of firm-years to the riskiest?
 
 # %%
 pds = cumulative_pd(hazards)
 seq_oof = as_oof(pds[:, HORIZON - 1])
 outcomes = dev.loc[np.concatenate([fold.valid for fold in folds])].reset_index(drop=True)
 LAST_3Y = DEV_END + HORIZON - 3  # the last year whose three-year label stays inside the embargo
-realised = pd.DataFrame(
+realized = pd.DataFrame(
     {
         1: outcomes["target_1"],
         2: outcomes["target"],
         3: outcomes["target_3"].where(outcomes["year"] <= LAST_3Y),
     }
 )
-tenth = pd.qcut(seq_oof["pct"].rank(method="first"), 10, labels=range(1, 11))
+decile = pd.qcut(seq_oof["pct"].rank(method="first"), 10, labels=range(1, 11))
 
 fig, axes = plt.subplots(1, 3, figsize=(viz.EXHIBIT_WIDTH_IN, 3.4), sharey=True)
 horizon_auc = {}
-for ax, years in zip(axes, realised):
-    known = realised[years].notna()
-    predicted = pd.Series(pds[:, years - 1])[known].groupby(tenth[known], observed=True).mean()
-    failed = realised.loc[known, years].groupby(tenth[known], observed=True).agg(["sum", "count"])
+for ax, years in zip(axes, realized):
+    known = realized[years].notna()
+    predicted = pd.Series(pds[:, years - 1])[known].groupby(decile[known], observed=True).mean()
+    failed = realized.loc[known, years].groupby(decile[known], observed=True).agg(["sum", "count"])
     bounds = np.array([wilson_interval(int(k), int(n)) for k, n in failed.to_numpy()])
     rate = failed["sum"] / failed["count"]
     ax.vlines(rate.index.astype(int), bounds[:, 0], bounds[:, 1], color=viz.INK, linewidth=1.2)
     ax.scatter(rate.index.astype(int), rate, s=22, color=viz.INK, zorder=3)
     ax.plot(predicted.index.astype(int), predicted, color=NETWORKS, linewidth=1.8)
     ax.set_title(f"Within {years} year{'s' if years > 1 else ''}")
-    ax.set_xlabel("Tenth of firm-years, safest to riskiest")
+    if years == 1:
+        ax.set_xlabel("Decile of firm-years, 1 is safest", loc="left")
     ax.set_xticks(range(1, 11))
     ax.grid(axis="x", visible=False)
     horizon_auc[years] = roc_auc_score(
-        realised.loc[known, years],
+        realized.loc[known, years],
         within_year_percentile(pd.Series(pds[:, years - 1])[known], outcomes.loc[known, "year"]),
     )
     if years == 3:
@@ -934,7 +926,7 @@ axes[0].yaxis.set_major_formatter(PercentFormatter(1, decimals=0))
 axes[0].annotate("predicted", (10, top_pd * 0.36), color=NETWORKS, size=9, ha="right")
 axes[0].annotate("what happened", (5.4, top_pd * 0.2), color=viz.INK, size=9, ha="right")
 
-# The readings say the top tenth is predicted too high, the bottom too low, and ranking fades with the horizon.
+# The readings say the top decile is predicted too high, the bottom too low, and ranking fades with the horizon.
 assert top_pd > top_rate and predicted.iloc[0] < rate.iloc[0]
 assert horizon_auc[1] > horizon_auc[2] > horizon_auc[3]
 for years, value in horizon_auc.items():
@@ -943,15 +935,14 @@ store.put("last_3y_year", LAST_3Y)
 
 viz.exhibit(
     fig,
-    f"The riskiest tenth is given {top_pd:.0%} over three years, and {top_rate:.0%} of it fails",
-    "Mean predicted cumulative probability, line, against the share that failed, dots with 95% "
-    "Wilson intervals.",
+    f"The riskiest decile is given {top_pd:.0%} over three years, and {top_rate:.0%} of it fails",
+    "Line: mean predicted cumulative probability. Dots: the share that failed, with 95% Wilson intervals.",
     OOF_SOURCE + f"; three years to {LAST_3Y}",
 )
 
 # %% [markdown]
-# **Reading.** In Exhibit 4 the predicted line rises with the horizon and with the tenth, as a term structure should.
-# It is too steep: over three years the riskiest tenth is given {{ch6.top_pd_3:.1%}} and fails at {{ch6.top_rate_3:.1%}}, and the safest is given {{ch6.bottom_pd_3:.1%}} and fails at {{ch6.bottom_rate_3:.1%}}.
+# **Reading.** In Exhibit 4 the predicted line rises with the horizon and with the decile, as a term structure should.
+# It is too steep: over three years the riskiest decile is given {{ch6.top_pd_3:.1%}} and fails at {{ch6.top_rate_3:.1%}}, and the safest is given {{ch6.bottom_pd_3:.1%}} and fails at {{ch6.bottom_rate_3:.1%}}.
 #
 # The ranking is strongest at one year and fades: ROC-AUC {{ch6.horizon_auc_1:.3f}}, {{ch6.horizon_auc_2:.3f}}, and {{ch6.horizon_auc_3:.3f}} at one, two, and three years.
 #
@@ -1008,7 +999,7 @@ versus.round(4)
 # Q. Where do the trees and the network disagree?
 
 # %%
-BUDGET = 0.05  # the middle review budget: the top twentieth of each year
+BUDGET = 0.05  # the middle review budget: the riskiest share of each year
 tree_pct, net_pct = ladder[TREES]["pct"], tab_oof["pct"]
 failures = (oof_rows["target"] == 1).to_numpy()
 tree_flags, net_flags = (tree_pct > 1 - BUDGET).to_numpy(), (net_pct > 1 - BUDGET).to_numpy()
@@ -1021,7 +1012,19 @@ rank_correlation = tree_pct.corr(net_pct, method="spearman")
 
 fig, ax = plt.subplots(figsize=(viz.EXHIBIT_WIDTH_IN, 5.2))
 ax.hexbin(tree_pct, net_pct, gridsize=45, cmap="Greys", vmax=60, linewidths=0, mincnt=1, alpha=0.55)
-ax.scatter(tree_pct[failures], net_pct[failures], s=9, color=viz.INK, zorder=3)
+ax.scatter(tree_pct[failures], net_pct[failures], s=9, color=viz.INK, edgecolor=viz.SHEET, linewidth=0.3,
+           alpha=0.85, zorder=3)  # fmt: skip
+tag = {
+    "size": 9.5,
+    "bbox": {"facecolor": viz.SHEET, "edgecolor": "none", "pad": 2, "alpha": 0.9},
+    "zorder": 4,
+}
+ax.text(1 - BUDGET - 0.012, 0.5, f"right of this line, trees only: {caught['trees only']}", rotation=90,
+        ha="right", va="center", **tag)  # fmt: skip
+ax.text(0.5, 1 - BUDGET - 0.012, f"above this line, network only: {caught['network only']}",
+        ha="center", va="top", **tag)  # fmt: skip
+ax.annotate(f"both: {caught['both']}", (1 - BUDGET / 2, 1 - BUDGET / 2), xytext=(0.8, 0.84),
+            arrowprops={"arrowstyle": "-", "color": viz.INK, "linewidth": 0.8}, **tag)  # fmt: skip
 ax.axvline(1 - BUDGET, color=viz.SLATE, linewidth=0.8, linestyle="--")
 ax.axhline(1 - BUDGET, color=viz.SLATE, linewidth=0.8, linestyle="--")
 ax.set_xlabel("Percentile within the year, trees")
@@ -1033,6 +1036,7 @@ ax.yaxis.set_major_formatter(PercentFormatter(1, decimals=0))
 ax.grid(visible=False)
 
 store.put("rank_correlation", rank_correlation)
+store.put("budget", BUDGET)
 store.put("n_failures", int(failures.sum()))
 for name, count in caught.items():
     store.put("caught_" + name.replace(" ", "_"), count)
@@ -1043,15 +1047,15 @@ viz.exhibit(
     fig,
     f"The trees alone catch {caught['trees only']} failures, the network alone "
     f"{caught['network only']}, and both catch {caught['both']}",
-    f"Every out-of-fold firm-year, grey, and the {int(failures.sum())} that failed, black. Dashed "
-    "lines mark the top twentieth of each model.",
+    f"Every out-of-fold firm-year, gray, and the {int(failures.sum())} that failed, black. Dashed "
+    f"lines mark each model's top {BUDGET:.0%}.",
     OOF_SOURCE,
     save_as="ch6",
 )
 
 # %% [markdown]
 # **Reading.** In Exhibit 5 a firm-year on the diagonal is ranked the same by both models, and the rank correlation is {{ch6.rank_correlation:.2f}}.
-# Of the {{ch6.n_failures}} failures, both models put {{ch6.caught_both}} in their top twentieth.
+# Of the {{ch6.n_failures}} failures, both models put {{ch6.caught_both}} inside the middle budget, the riskiest {{ch6.budget:.0%}} of each year.
 #
 # The trees alone catch {{ch6.caught_trees_only}} more, and the network alone {{ch6.caught_network_only}}.
 # The two models disagree, and each is sometimes right where the other is wrong.
@@ -1128,17 +1132,28 @@ KINDS = ("classic", "logistic", "logistic", "trees", "trees", "networks", "blend
 COLORS = [viz.MODEL_COLORS[kind] for kind in KINDS]
 fig, (level, change) = plt.subplots(1, 2, figsize=(viz.EXHIBIT_WIDTH_IN, 4.6), sharey=True)
 place = np.arange(len(ladder))
+EARLIER = 5  # the rungs of Chapters 4 and 5, drawn fainter than the two this chapter adds
+PLATE = {
+    "facecolor": viz.SHEET,
+    "edgecolor": "none",
+    "pad": 1,
+}  # keeps a label clear of the zero line
 for y_at, (name, row), color in zip(place, board.iterrows(), COLORS):
-    level.plot([row["roc_auc_lo"], row["roc_auc_hi"]], [y_at, y_at], color=color, linewidth=1.6)
-    level.scatter(row["roc_auc"], y_at, s=46, color=color, zorder=3)
+    fade = 0.4 if y_at < EARLIER else 1.0
+    level.plot([row["roc_auc_lo"], row["roc_auc_hi"]], [y_at, y_at], color=color, linewidth=1.6,
+               alpha=fade)  # fmt: skip
+    level.scatter(row["roc_auc"], y_at, s=46, color=color, zorder=3, alpha=fade)
     level.annotate(f"{row['roc_auc']:.3f}", (row["roc_auc"], y_at), xytext=(0, 8),
-                   textcoords="offset points", ha="center", size=9)  # fmt: skip
+                   textcoords="offset points", ha="center", size=9,
+                   color=viz.MIST if y_at < EARLIER else viz.INK)  # fmt: skip
 for y_at, (name, row), color in zip(place[1:], steps.iterrows(), COLORS[1:]):
+    fade = 0.4 if y_at < EARLIER else 1.0
     change.plot([row["roc_auc_diff_lo"], row["roc_auc_diff_hi"]], [y_at, y_at], color=color,
-                linewidth=1.6)  # fmt: skip
-    change.scatter(row["roc_auc_diff"], y_at, s=46, color=color, zorder=3)
-    change.annotate(f"{row['roc_auc_diff']:+.3f}", (row["roc_auc_diff"], y_at), xytext=(0, 8),
-                    textcoords="offset points", ha="center", size=9)  # fmt: skip
+                linewidth=1.6, alpha=fade)  # fmt: skip
+    change.scatter(row["roc_auc_diff"], y_at, s=46, color=color, zorder=3, alpha=fade)
+    change.annotate(f"{row['roc_auc_diff']:+.3f}", (row["roc_auc_diff"], y_at), xytext=(0, 9),
+                    textcoords="offset points", ha="center", size=9, bbox=PLATE, zorder=4,
+                    color=viz.MIST if y_at < EARLIER else viz.INK)  # fmt: skip
 change.axvline(0, color=viz.INK, linewidth=0.8)
 level.set_yticks(place, [f"{k + 1}  {name}" for k, name in enumerate(ladder)])
 level.set_ylim(-0.6, len(ladder) - 0.4)
@@ -1155,9 +1170,9 @@ assert board["roc_auc"].idxmax() == TREES
 
 viz.exhibit(
     fig,
-    f"The network ranks {-tab_step['roc_auc_diff']:.3f} below the trees, and the blend of the two "
-    f"comes back to {board.loc[BLEND, 'roc_auc']:.3f}",
-    "Walk-forward scores with 95% cluster-bootstrap intervals. Right: paired differences.",
+    f"The network scores {board.loc[NETWORK, 'roc_auc']:.3f} and the blend {board.loc[BLEND, 'roc_auc']:.3f}, "
+    f"neither above the trees at {board.loc[TREES, 'roc_auc']:.3f}",
+    "95% cluster-bootstrap intervals. Right: paired differences. Faint: the rungs of Chapters 4 and 5.",
     OOF_SOURCE,
 )
 
@@ -1247,12 +1262,12 @@ oof_scores.groupby("model", sort=False)["target"].agg(rows="size", positives="su
 # %% [markdown]
 # # Findings
 #
-# 1. A network needs its inputs on one scale: the same network scores {{ch6.raw_auc:.3f}} on ratios as they come and {{ch6.tab_auc:.3f}} on transformed ones (Exhibit 1).
+# 1. A network needs its inputs on one scale: the same network scores {{ch6.raw_auc:.3f}} on ratios as they come and {{ch6.tab_auc:.3f}} on transformed ones (Exhibit 1 and the plate after Exhibit 2).
 # 2. Early stopping on a fold's own last two training years chooses {{ch6.tab_last_low}} to {{ch6.tab_last_high}} epochs for the tabular network on the last fold, and the validation year is never touched (Exhibit 2).
-# 3. A grid of {{ch6.n_grid}} pairings of learning rate and dropout chooses the plain settings, and the whole grid spans less than the seed moves one network (Exhibit 2).
+# 3. A grid of {{ch6.n_grid}} pairings of learning rate and dropout chooses the plain settings, and the whole grid spans less than the seed moves one network (the table after Exhibit 2).
 # 4. On the same {{ch6.n_ratios}} ratios the tabular network's ROC-AUC differs from the trees' by {{ch6.tab_step:.3f}}, with an interval below zero (Exhibit 6).
 # 5. A recurrent network that reads five years in order ranks lower still, at {{ch6.seq_auc:.3f}}: history does not help here in this form either (Exhibit 3).
-# 6. Three hazards give a term structure that rises as it should and is too steep: the riskiest tenth is given {{ch6.top_pd_3:.1%}} over three years and fails at {{ch6.top_rate_3:.1%}} (Exhibit 4).
+# 6. Three hazards give a term structure that rises as it should and is too steep: the riskiest decile is given {{ch6.top_pd_3:.1%}} over three years and fails at {{ch6.top_rate_3:.1%}} (Exhibit 4).
 # 7. The trees and the network disagree, with a rank correlation of {{ch6.rank_correlation:.2f}}, and each catches failures the other misses (Exhibit 5).
 # 8. The blend scores {{ch6.blend_auc:.3f}}, and its difference from the trees alone has an interval that holds zero, so the simpler tree model is the one named (Exhibit 6).
 
